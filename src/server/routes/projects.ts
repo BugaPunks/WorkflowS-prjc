@@ -43,7 +43,19 @@ router.get('/:id', async (req, res) => {
       where: { id: req.params.id },
       include: {
         owner: true,
-        members: true,
+        members: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                role: true,
+                avatar: true,
+              },
+            },
+          },
+        },
         sprints: true,
         userStories: true,
         tasks: true,
@@ -101,6 +113,73 @@ router.put('/:id', async (req, res) => {
       error: 'Error al actualizar proyecto',
       details: error instanceof Error ? error.message : 'Unknown error',
     });
+  }
+});
+
+// POST asignar miembro a proyecto
+router.post('/:id/members', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const { userId, role } = req.body; // role: SCRUM_MASTER, PRODUCT_OWNER, TEAM_DEVELOPER
+
+    if (!userId || !role) {
+      return res
+        .status(400)
+        .json({ error: 'Faltan campos requeridos (userId, role)' });
+    }
+
+    // Check if already member
+    const existingMember = await prisma.projectMember.findUnique({
+      where: {
+        projectId_userId: {
+          projectId,
+          userId,
+        },
+      },
+    });
+
+    if (existingMember) {
+      // Update role if exists
+      const updatedMember = await prisma.projectMember.update({
+        where: { id: existingMember.id },
+        data: { role },
+      });
+      return res.json({ data: updatedMember, message: 'Rol actualizado' });
+    }
+
+    const member = await prisma.projectMember.create({
+      data: {
+        projectId,
+        userId,
+        role,
+      },
+    });
+    res.status(201).json({ data: member });
+  } catch (error) {
+    console.error('Error al asignar miembro:', error);
+    res.status(500).json({
+      error: 'Error al asignar miembro',
+      details: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+// DELETE eliminar miembro de proyecto
+router.delete('/:id/members/:userId', async (req, res) => {
+  try {
+    const { id: projectId, userId } = req.params;
+    await prisma.projectMember.delete({
+      where: {
+        projectId_userId: {
+          projectId,
+          userId,
+        },
+      },
+    });
+    res.json({ message: 'Miembro eliminado del proyecto' });
+  } catch (error) {
+    console.error('Error al eliminar miembro:', error);
+    res.status(500).json({ error: 'Error al eliminar miembro' });
   }
 });
 
