@@ -16,7 +16,7 @@ router.get('/', async (_req, res) => {
         },
       },
     });
-    res.json(userStories);
+    res.json({ data: userStories });
   } catch {
     res.status(500).json({ error: 'Error al obtener user stories' });
   }
@@ -35,7 +35,7 @@ router.get('/:id', async (req, res) => {
     });
     if (!userStory)
       return res.status(404).json({ error: 'User story no encontrado' });
-    res.json(userStory);
+    res.json({ data: userStory });
   } catch {
     res.status(500).json({ error: 'Error al obtener user story' });
   }
@@ -44,8 +44,15 @@ router.get('/:id', async (req, res) => {
 // POST crear user story
 router.post('/', async (req, res) => {
   try {
-    const { title, description, projectId, assigneeId, priority, storyPoints } =
-      req.body;
+    const {
+      title,
+      description,
+      acceptance,
+      projectId,
+      assigneeId,
+      priority,
+      storyPoints,
+    } = req.body;
 
     if (!title || !projectId) {
       return res.status(400).json({ error: 'Faltan campos requeridos' });
@@ -55,14 +62,16 @@ router.post('/', async (req, res) => {
       data: {
         title,
         description,
+        acceptance,
         projectId,
         assigneeId,
         priority: priority || 'MEDIUM',
         storyPoints,
       },
     });
-    res.status(201).json(userStory);
-  } catch {
+    res.status(201).json({ data: userStory });
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'Error al crear user story' });
   }
 });
@@ -74,7 +83,7 @@ router.put('/:id', async (req, res) => {
       where: { id: req.params.id },
       data: req.body,
     });
-    res.json(userStory);
+    res.json({ data: userStory });
   } catch {
     res.status(500).json({ error: 'Error al actualizar user story' });
   }
