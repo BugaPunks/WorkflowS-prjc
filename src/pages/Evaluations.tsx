@@ -50,11 +50,25 @@ export default function Evaluations() {
   useEffect(() => {
     if (user) {
       // Only allow teachers/admins to see this page?
-      // For now, let everyone see but only Teachers can evaluate?
+      if (user.role !== 'ADMIN') {
+        // Redirect or show message is handled by UI hiding, but for safety:
+        // console.warn('Unauthorized access to evaluations');
+      }
       // Based on requirements: "Docente... evaluar entregables"
       loadTasks(user.id);
     }
   }, [user, loadTasks]);
+
+  if (user?.role !== 'ADMIN') {
+    return (
+      <div className="p-8 text-center text-gray-600">
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          Acceso Restringido
+        </h1>
+        <p>No tienes permisos para ver esta página.</p>
+      </div>
+    );
+  }
 
   const handleEvaluate = async (e: React.FormEvent) => {
     e.preventDefault();

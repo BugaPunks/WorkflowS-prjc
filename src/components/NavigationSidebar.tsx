@@ -10,7 +10,7 @@ export default function Sidebar({ isOpen, user, onClose }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const navItems = [
+  const ADMIN_MENU = [
     { label: 'Proyectos', href: '/projects', icon: '📊' },
     { label: 'Sprints', href: '/sprints', icon: '🏃' },
     { label: 'Tareas', href: '/tasks', icon: '✓' },
@@ -19,15 +19,16 @@ export default function Sidebar({ isOpen, user, onClose }: SidebarProps) {
     { label: 'Evaluaciones', href: '/evaluations', icon: '⭐' },
   ];
 
-  // Filtrar items según el rol del usuario
-  const filteredItems = navItems.filter((item) => {
-    // Los admins ven todo
-    if (user?.role === 'ADMIN') return true;
-    // Otros roles pueden ver proyectos y tareas
-    return ['Proyectos', 'Tareas', 'Historias', 'Reportes'].includes(
-      item.label,
-    );
-  });
+  const STUDENT_MENU = [
+    { label: 'Proyectos', href: '/projects', icon: '📊' },
+    { label: 'Sprints', href: '/sprints', icon: '🏃' },
+    { label: 'Tareas', href: '/tasks', icon: '✓' },
+    { label: 'Historias', href: '/user-stories', icon: '📖' },
+    { label: 'Reportes', href: '/reports', icon: '📈' },
+  ];
+
+  // Seleccionar menú según el rol del usuario
+  const filteredItems = user?.role === 'ADMIN' ? ADMIN_MENU : STUDENT_MENU;
 
   const isActive = (href: string) => location.pathname === href;
 
