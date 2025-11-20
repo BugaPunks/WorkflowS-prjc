@@ -5,9 +5,8 @@ import {
   type DropResult,
 } from '@hello-pangea/dnd';
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { projectAPI, taskAPI } from '@/api/client';
-import AppShell from '@/components/AppShell';
+import { useSession } from '@/hooks/useSession';
 
 interface Task {
   id: string;
@@ -22,13 +21,6 @@ interface Task {
   };
 }
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-}
-
 interface Project {
   id: string;
   name: string;
@@ -41,8 +33,7 @@ const COLUMNS = {
 };
 
 export default function Tasks() {
-  const navigate = useNavigate();
-  const [user, setUser] = useState<User | null>(null);
+  const { session: user } = useSession();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -78,16 +69,11 @@ export default function Tasks() {
   }, []);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (!storedUser) {
-      navigate('/login');
-      return;
+    if (user) {
+      loadTasks(user.id);
+      loadProjects(user.id);
     }
-    const parsedUser = JSON.parse(storedUser);
-    setUser(parsedUser);
-    loadTasks(parsedUser.id);
-    loadProjects(parsedUser.id);
-  }, [navigate, loadTasks, loadProjects]);
+  }, [user, loadTasks, loadProjects]);
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,223 +145,221 @@ export default function Tasks() {
   };
 
   return (
-    <AppShell user={user || undefined}>
-      <div className="p-8 max-w-7xl mx-auto h-full flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900">Mis Tareas</h2>
-            <p className="text-gray-600 mt-2">
-              Tablero Kanban de tus tareas asignadas
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowModal(true)}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium"
-          >
-            + Nueva Tarea
-          </button>
+    <div className="p-8 max-w-7xl mx-auto h-full flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h2 className="text-3xl font-bold text-gray-900">Mis Tareas</h2>
+          <p className="text-gray-600 mt-2">
+            Tablero Kanban de tus tareas asignadas
+          </p>
         </div>
-
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-            {error}
-          </div>
-        )}
-
-        {/* Loading */}
-        {isLoading && (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-            <p className="text-gray-600 mt-4">Cargando tareas...</p>
-          </div>
-        )}
-
-        {/* Kanban Board */}
-        {!isLoading && (
-          <DragDropContext onDragEnd={onDragEnd}>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
-              {Object.entries(COLUMNS).map(([statusKey, statusLabel]) => (
-                <div
-                  key={statusKey}
-                  className="bg-gray-100 rounded-lg p-4 flex flex-col h-full min-h-[500px]"
-                >
-                  <h3 className="font-bold text-gray-700 mb-4 flex justify-between items-center">
-                    {statusLabel}
-                    <span className="bg-gray-200 text-gray-600 px-2 py-1 rounded-full text-xs">
-                      {getTasksByStatus(statusKey).length}
-                    </span>
-                  </h3>
-                  <Droppable droppableId={statusKey}>
-                    {(provided) => (
-                      <div
-                        {...provided.droppableProps}
-                        ref={provided.innerRef}
-                        className="flex-1 space-y-3"
-                      >
-                        {getTasksByStatus(statusKey).map((task, index) => (
-                          <Draggable
-                            key={task.id}
-                            draggableId={task.id}
-                            index={index}
-                          >
-                            {(provided) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                className="bg-white p-4 rounded shadow-sm hover:shadow-md transition-shadow"
-                              >
-                                <div className="flex justify-between items-start mb-2">
-                                  <h4 className="font-semibold text-gray-800">
-                                    {task.title}
-                                  </h4>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteTask(task.id)}
-                                    className="text-red-400 hover:text-red-600"
-                                    title="Eliminar"
-                                  >
-                                    ×
-                                  </button>
-                                </div>
-                                <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                                  {task.description}
-                                </p>
-                                <div className="flex justify-between items-center text-xs text-gray-500">
-                                  <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                                    {task.project?.name}
-                                  </span>
-                                  {task.deadline && (
-                                    <span>
-                                      {new Date(
-                                        task.deadline,
-                                      ).toLocaleDateString()}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </Draggable>
-                        ))}
-                        {provided.placeholder}
-                      </div>
-                    )}
-                  </Droppable>
-                </div>
-              ))}
-            </div>
-          </DragDropContext>
-        )}
-
-        {/* Modal */}
-        {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-8 w-full max-w-md">
-              <h3 className="text-2xl font-bold text-gray-900 mb-6">
-                Crear Nueva Tarea
-              </h3>
-              <form onSubmit={handleCreateTask}>
-                <div className="mb-4">
-                  <label
-                    htmlFor="task-title"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Título
-                  </label>
-                  <input
-                    id="task-title"
-                    type="text"
-                    value={formData.title}
-                    onChange={(e) =>
-                      setFormData({ ...formData, title: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Título de la tarea"
-                    required
-                  />
-                </div>
-                <div className="mb-4">
-                  <label
-                    htmlFor="task-project"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Proyecto
-                  </label>
-                  <select
-                    id="task-project"
-                    value={formData.projectId}
-                    onChange={(e) =>
-                      setFormData({ ...formData, projectId: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  >
-                    <option value="">Selecciona un proyecto</option>
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="mb-4">
-                  <label
-                    htmlFor="task-desc"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Descripción
-                  </label>
-                  <textarea
-                    id="task-desc"
-                    value={formData.description}
-                    onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Descripción de la tarea"
-                    rows={4}
-                  />
-                </div>
-                <div className="mb-6">
-                  <label
-                    htmlFor="task-deadline"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Vencimiento
-                  </label>
-                  <input
-                    id="task-deadline"
-                    type="date"
-                    value={formData.deadline}
-                    onChange={(e) =>
-                      setFormData({ ...formData, deadline: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowModal(false)}
-                    className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-                  >
-                    Crear
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={() => setShowModal(true)}
+          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium"
+        >
+          + Nueva Tarea
+        </button>
       </div>
-    </AppShell>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+          {error}
+        </div>
+      )}
+
+      {/* Loading */}
+      {isLoading && (
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+          <p className="text-gray-600 mt-4">Cargando tareas...</p>
+        </div>
+      )}
+
+      {/* Kanban Board */}
+      {!isLoading && (
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
+            {Object.entries(COLUMNS).map(([statusKey, statusLabel]) => (
+              <div
+                key={statusKey}
+                className="bg-gray-100 rounded-lg p-4 flex flex-col h-full min-h-[500px]"
+              >
+                <h3 className="font-bold text-gray-700 mb-4 flex justify-between items-center">
+                  {statusLabel}
+                  <span className="bg-gray-200 text-gray-600 px-2 py-1 rounded-full text-xs">
+                    {getTasksByStatus(statusKey).length}
+                  </span>
+                </h3>
+                <Droppable droppableId={statusKey}>
+                  {(provided) => (
+                    <div
+                      {...provided.droppableProps}
+                      ref={provided.innerRef}
+                      className="flex-1 space-y-3"
+                    >
+                      {getTasksByStatus(statusKey).map((task, index) => (
+                        <Draggable
+                          key={task.id}
+                          draggableId={task.id}
+                          index={index}
+                        >
+                          {(provided) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className="bg-white p-4 rounded shadow-sm hover:shadow-md transition-shadow"
+                            >
+                              <div className="flex justify-between items-start mb-2">
+                                <h4 className="font-semibold text-gray-800">
+                                  {task.title}
+                                </h4>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteTask(task.id)}
+                                  className="text-red-400 hover:text-red-600"
+                                  title="Eliminar"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                              <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                                {task.description}
+                              </p>
+                              <div className="flex justify-between items-center text-xs text-gray-500">
+                                <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                                  {task.project?.name}
+                                </span>
+                                {task.deadline && (
+                                  <span>
+                                    {new Date(
+                                      task.deadline,
+                                    ).toLocaleDateString()}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </div>
+            ))}
+          </div>
+        </DragDropContext>
+      )}
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 w-full max-w-md">
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">
+              Crear Nueva Tarea
+            </h3>
+            <form onSubmit={handleCreateTask}>
+              <div className="mb-4">
+                <label
+                  htmlFor="task-title"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Título
+                </label>
+                <input
+                  id="task-title"
+                  type="text"
+                  value={formData.title}
+                  onChange={(e) =>
+                    setFormData({ ...formData, title: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Título de la tarea"
+                  required
+                />
+              </div>
+              <div className="mb-4">
+                <label
+                  htmlFor="task-project"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Proyecto
+                </label>
+                <select
+                  id="task-project"
+                  value={formData.projectId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, projectId: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                >
+                  <option value="">Selecciona un proyecto</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="mb-4">
+                <label
+                  htmlFor="task-desc"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Descripción
+                </label>
+                <textarea
+                  id="task-desc"
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Descripción de la tarea"
+                  rows={4}
+                />
+              </div>
+              <div className="mb-6">
+                <label
+                  htmlFor="task-deadline"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Vencimiento
+                </label>
+                <input
+                  id="task-deadline"
+                  type="date"
+                  value={formData.deadline}
+                  onChange={(e) =>
+                    setFormData({ ...formData, deadline: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+                >
+                  Crear
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
