@@ -14,7 +14,6 @@
     "verbatimModuleSyntax": true,
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
-    "noUncheckedSideEffectImports": true,
 
     /* path mapping */
     "baseUrl": ".",
