@@ -2,12 +2,19 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import AppShell from '@/components/AppShell';
 
+interface ProjectMember {
+  userId: string;
+  role: string;
+}
+
 interface Project {
   id: string;
   name: string;
   description: string;
   status: string;
   createdAt: string;
+  ownerId: string;
+  members: ProjectMember[];
 }
 
 interface Sprint {
@@ -30,7 +37,8 @@ export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
   const [user, setUser] = useState<User | null>(null);
   const [project, setProject] = useState<Project | null>(null);
-  const [sprints, _setSprints] = useState<Sprint[]>([]);
+  const [sprints, setSprints] = useState<Sprint[]>([]);
+  const [isProjectAdmin, setIsProjectAdmin] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showSprintModal, setShowSprintModal] = useState(false);
@@ -49,6 +57,7 @@ export default function ProjectDetail() {
       if (!response.ok) throw new Error('Proyecto no encontrado');
       const data = await response.json();
       setProject(data.data);
+      setSprints(data.data.sprints || []);
     } catch (err) {
       setError('Error al cargar el proyecto');
       console.error(err);
@@ -63,9 +72,21 @@ export default function ProjectDetail() {
       navigate('/login');
       return;
     }
-    setUser(JSON.parse(storedUser));
+    const parsedUser = JSON.parse(storedUser);
+    setUser(parsedUser);
     loadProject();
   }, [navigate, loadProject]);
+
+  useEffect(() => {
+    if (user && project) {
+      const isOwner = project.ownerId === user.id;
+      const member = project.members.find((m) => m.userId === user.id);
+      const isLead = member?.role === 'OWNER' || member?.role === 'LEAD';
+      // Also allow system admins or users with Scrum Master/PO roles in project (if logic existed)
+      // For now, check if owner or has LEAD role in project members
+      setIsProjectAdmin(isOwner || isLead || user.role === 'ADMIN');
+    }
+  }, [user, project]);
 
   const handleCreateSprint = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -177,13 +198,15 @@ export default function ProjectDetail() {
             <h2 className="text-2xl font-bold text-gray-900">
               Sprints del Proyecto
             </h2>
-            <button
-              type="button"
-              onClick={() => setShowSprintModal(true)}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium"
-            >
-              + Nuevo Sprint
-            </button>
+            {isProjectAdmin && (
+              <button
+                type="button"
+                onClick={() => setShowSprintModal(true)}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium"
+              >
+                + Nuevo Sprint
+              </button>
+            )}
           </div>
 
           {sprints.length === 0 ? (
@@ -193,15 +216,19 @@ export default function ProjectDetail() {
                 No hay sprints
               </h3>
               <p className="text-gray-600 mb-6">
-                Crea tu primer sprint para este proyecto
+                {isProjectAdmin
+                  ? 'Crea tu primer sprint para este proyecto'
+                  : 'Aún no hay sprints creados en este proyecto'}
               </p>
-              <button
-                type="button"
-                onClick={() => setShowSprintModal(true)}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium"
-              >
-                Crear Sprint
-              </button>
+              {isProjectAdmin && (
+                <button
+                  type="button"
+                  onClick={() => setShowSprintModal(true)}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium"
+                >
+                  Crear Sprint
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

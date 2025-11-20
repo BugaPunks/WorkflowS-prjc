@@ -62,7 +62,10 @@ export const userAPI = {
 // ============ PROYECTOS ============
 
 export const projectAPI = {
-  getAll: () => apiRequest('/projects'),
+  getAll: (queryParams?: { memberId?: string }) => {
+    const params = new URLSearchParams(queryParams as Record<string, string>);
+    return apiRequest(`/projects?${params.toString()}`);
+  },
   getById: (id: string) => apiRequest(`/projects/${id}`),
   create: (data: { name: string; description?: string; ownerId: string }) =>
     apiRequest('/projects', { method: 'POST', body: JSON.stringify(data) }),
@@ -95,7 +98,10 @@ export const sprintAPI = {
 // ============ TAREAS ============
 
 export const taskAPI = {
-  getAll: () => apiRequest('/tasks'),
+  getAll: (queryParams?: { assigneeId?: string; projectId?: string }) => {
+    const params = new URLSearchParams(queryParams as Record<string, string>);
+    return apiRequest(`/tasks?${params.toString()}`);
+  },
   getById: (id: string) => apiRequest(`/tasks/${id}`),
   create: (data: {
     title: string;
@@ -104,6 +110,7 @@ export const taskAPI = {
     assigneeId?: string;
     priority?: string;
     deadline?: string;
+    status?: string;
   }) => apiRequest('/tasks', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: unknown) =>
     apiRequest(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(data) }),

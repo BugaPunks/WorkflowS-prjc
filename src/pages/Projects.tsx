@@ -27,10 +27,12 @@ export default function Projects() {
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ name: '', description: '' });
 
-  const loadProjects = useCallback(async () => {
+  const loadProjects = useCallback(async (userId?: string) => {
     try {
       setIsLoading(true);
-      const projectsData = await projectAPI.getAll();
+      const projectsData = await projectAPI.getAll({
+        memberId: userId,
+      });
       setProjects(projectsData || []);
     } catch (err) {
       setError('Error al cargar los proyectos');
@@ -46,8 +48,9 @@ export default function Projects() {
       navigate('/login');
       return;
     }
-    setUser(JSON.parse(storedUser));
-    loadProjects();
+    const parsedUser = JSON.parse(storedUser);
+    setUser(parsedUser);
+    loadProjects(parsedUser.id);
   }, [navigate, loadProjects]);
 
   const handleCreateProject = async (e: React.FormEvent) => {
@@ -67,7 +70,7 @@ export default function Projects() {
       await projectAPI.create(projectData);
       setFormData({ name: '', description: '' });
       setShowModal(false);
-      await loadProjects();
+      if (user) await loadProjects(user.id);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Error al crear el proyecto',
@@ -81,12 +84,14 @@ export default function Projects() {
       return;
     try {
       await projectAPI.delete(id);
-      await loadProjects();
+      if (user) await loadProjects(user.id);
     } catch (err) {
       setError('Error al eliminar el proyecto');
       console.error(err);
     }
   };
+
+  const canCreateProject = user?.role === 'ADMIN';
 
   return (
     <AppShell user={user || undefined}>
@@ -99,13 +104,15 @@ export default function Projects() {
               Gestiona tus proyectos y colabora con tu equipo
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowModal(true)}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium"
-          >
-            + Nuevo Proyecto
-          </button>
+          {canCreateProject && (
+            <button
+              type="button"
+              onClick={() => setShowModal(true)}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium"
+            >
+              + Nuevo Proyecto
+            </button>
+          )}
         </div>
 
         {/* Error Message */}
@@ -153,13 +160,15 @@ export default function Projects() {
                   >
                     Ver
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteProject(project.id)}
-                    className="flex-1 bg-red-100 text-red-700 px-3 py-2 rounded-lg hover:bg-red-200 font-medium text-sm"
-                  >
-                    Eliminar
-                  </button>
+                  {canCreateProject && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteProject(project.id)}
+                      className="flex-1 bg-red-100 text-red-700 px-3 py-2 rounded-lg hover:bg-red-200 font-medium text-sm"
+                    >
+                      Eliminar
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -174,20 +183,24 @@ export default function Projects() {
               No hay proyectos
             </h3>
             <p className="text-gray-600 mb-6">
-              Crea tu primer proyecto para comenzar
+              {canCreateProject
+                ? 'Crea tu primer proyecto para comenzar'
+                : 'No estás asignado a ningún proyecto'}
             </p>
-            <button
-              type="button"
-              onClick={() => setShowModal(true)}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium"
-            >
-              Crear Proyecto
-            </button>
+            {canCreateProject && (
+              <button
+                type="button"
+                onClick={() => setShowModal(true)}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium"
+              >
+                Crear Proyecto
+              </button>
+            )}
           </div>
         )}
 
         {/* Modal */}
-        {showModal && (
+        {showModal && canCreateProject && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-8 w-full max-w-md">
               <h3 className="text-2xl font-bold text-gray-900 mb-6">

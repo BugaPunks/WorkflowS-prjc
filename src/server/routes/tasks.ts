@@ -4,9 +4,16 @@ import { prisma } from '../db';
 const router = Router();
 
 // GET todas las tareas
-router.get('/', async (_req, res) => {
+router.get('/', async (req, res) => {
   try {
+    const { assigneeId, projectId } = req.query;
+    const where: Record<string, string> = {};
+
+    if (assigneeId) where.assigneeId = String(assigneeId);
+    if (projectId) where.projectId = String(projectId);
+
     const tasks = await prisma.task.findMany({
+      where,
       include: {
         assignee: {
           select: { id: true, name: true, email: true },
@@ -16,7 +23,7 @@ router.get('/', async (_req, res) => {
         },
       },
     });
-    res.json(tasks);
+    res.json({ data: tasks });
   } catch {
     res.status(500).json({ error: 'Error al obtener tareas' });
   }
@@ -43,8 +50,15 @@ router.get('/:id', async (req, res) => {
 // POST crear tarea
 router.post('/', async (req, res) => {
   try {
-    const { title, description, projectId, assigneeId, priority, deadline } =
-      req.body;
+    const {
+      title,
+      description,
+      projectId,
+      assigneeId,
+      priority,
+      deadline,
+      status,
+    } = req.body;
 
     if (!title || !projectId) {
       return res.status(400).json({ error: 'Faltan campos requeridos' });
@@ -58,6 +72,7 @@ router.post('/', async (req, res) => {
         assigneeId,
         priority: priority || 'MEDIUM',
         deadline: deadline ? new Date(deadline) : null,
+        status: status || 'TODO',
       },
     });
     res.status(201).json(task);

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { projectAPI } from '@/api/client';
 import AppShell from '@/components/AppShell';
 
 interface UserStory {
@@ -9,6 +10,11 @@ interface UserStory {
   status: string;
   priority: string;
   createdAt: string;
+}
+
+interface Project {
+  id: string;
+  name: string;
 }
 
 interface User {
@@ -22,6 +28,7 @@ export default function UserStories() {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [stories, setStories] = useState<UserStory[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -29,6 +36,7 @@ export default function UserStories() {
     title: '',
     description: '',
     priority: 'MEDIUM',
+    projectId: '',
   });
 
   const loadStories = useCallback(async () => {
@@ -46,15 +54,26 @@ export default function UserStories() {
     }
   }, []);
 
+  const loadProjects = useCallback(async (userId?: string) => {
+    try {
+      const projectsData = await projectAPI.getAll({ memberId: userId });
+      setProjects(projectsData || []);
+    } catch (err) {
+      console.error('Error al cargar proyectos:', err);
+    }
+  }, []);
+
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (!storedUser) {
       navigate('/login');
       return;
     }
-    setUser(JSON.parse(storedUser));
+    const parsedUser = JSON.parse(storedUser);
+    setUser(parsedUser);
     loadStories();
-  }, [navigate, loadStories]);
+    loadProjects(parsedUser.id);
+  }, [navigate, loadStories, loadProjects]);
 
   const handleCreateStory = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +84,12 @@ export default function UserStories() {
         body: JSON.stringify(formData),
       });
       if (!response.ok) throw new Error('Error al crear historia');
-      setFormData({ title: '', description: '', priority: 'MEDIUM' });
+      setFormData({
+        title: '',
+        description: '',
+        priority: 'MEDIUM',
+        projectId: '',
+      });
       setShowModal(false);
       await loadStories();
     } catch (err) {
@@ -205,6 +229,30 @@ export default function UserStories() {
                 Crear Nueva Historia
               </h3>
               <form onSubmit={handleCreateStory}>
+                <div className="mb-4">
+                  <label
+                    htmlFor="story-project"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Proyecto
+                  </label>
+                  <select
+                    id="story-project"
+                    value={formData.projectId}
+                    onChange={(e) =>
+                      setFormData({ ...formData, projectId: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">Selecciona un proyecto</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <div className="mb-4">
                   <label
                     htmlFor="story-title"

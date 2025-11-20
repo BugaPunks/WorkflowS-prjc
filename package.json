@@ -15,8 +15,9 @@
     "prisma:studio": "prisma studio"
   },
   "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1",
     "@prisma/adapter-pg": "^7.0.0",
-    "@prisma/client": "^7.0.0",
+    "@prisma/client": "5.22.0",
     "@tailwindcss/postcss": "^4.1.17",
     "@types/express": "^5.0.5",
     "@types/node": "^24.10.1",
@@ -26,7 +27,7 @@
     "express": "^5.1.0",
     "pg": "^8.16.3",
     "postcss": "^8.5.6",
-    "prisma": "^7.0.0",
+    "prisma": "5.22.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^7.9.6",

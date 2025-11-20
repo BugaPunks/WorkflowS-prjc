@@ -16,3 +16,4 @@ dist/
 .idea
 
 /src/generated/prisma
+dev.db

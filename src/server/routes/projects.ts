@@ -4,9 +4,20 @@ import { prisma } from '../db';
 const router = Router();
 
 // GET todos los proyectos
-router.get('/', async (_req, res) => {
+router.get('/', async (req, res) => {
   try {
+    const { memberId } = req.query;
+    const whereClause = memberId
+      ? {
+          OR: [
+            { ownerId: String(memberId) },
+            { members: { some: { userId: String(memberId) } } },
+          ],
+        }
+      : {};
+
     const projects = await prisma.project.findMany({
+      where: whereClause,
       include: {
         owner: {
           select: { id: true, name: true, email: true },

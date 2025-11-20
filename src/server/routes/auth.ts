@@ -7,10 +7,12 @@ const router = Router();
 // POST /api/auth/register - Registrar nuevo usuario
 router.post('/register', async (req, res) => {
   try {
+    console.log('Register body:', req.body);
     const { name, email, password, role = 'TEAM_DEVELOPER' } = req.body;
 
     // Validar campos requeridos
     if (!name || !email || !password) {
+      console.log('Missing fields:', { name, email, hasPassword: !!password });
       return res.status(400).json({ error: 'Faltan campos requeridos' });
     }
 
@@ -60,12 +62,15 @@ router.post('/register', async (req, res) => {
       user,
     });
   } catch (error) {
-    const err = error as { code?: string };
+    const err = error as { code?: string; message?: string };
+    console.error('Error en registro:', error);
     if (err.code === 'P2002') {
       return res.status(400).json({ error: 'El email ya está registrado' });
     }
-    console.error('Error en registro:', error);
-    res.status(500).json({ error: 'Error al registrar usuario' });
+    res.status(500).json({
+      error: 'Error al registrar usuario',
+      details: err.message || String(error),
+    });
   }
 });
 

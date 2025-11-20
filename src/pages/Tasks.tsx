@@ -1,5 +1,12 @@
+import {
+  DragDropContext,
+  Draggable,
+  Droppable,
+  type DropResult,
+} from '@hello-pangea/dnd';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { projectAPI, taskAPI } from '@/api/client';
 import AppShell from '@/components/AppShell';
 
 interface Task {
@@ -9,6 +16,10 @@ interface Task {
   status: string;
   deadline: string;
   createdAt: string;
+  project: {
+    id: string;
+    name: string;
+  };
 }
 
 interface User {
@@ -18,10 +29,22 @@ interface User {
   role: string;
 }
 
+interface Project {
+  id: string;
+  name: string;
+}
+
+const COLUMNS = {
+  TODO: 'Pendiente',
+  IN_PROGRESS: 'En Progreso',
+  COMPLETED: 'Completado',
+};
+
 export default function Tasks() {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -29,20 +52,28 @@ export default function Tasks() {
     title: '',
     description: '',
     deadline: '',
+    projectId: '',
   });
 
-  const loadTasks = useCallback(async () => {
+  const loadTasks = useCallback(async (userId?: string) => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/tasks');
-      if (!response.ok) throw new Error('Error al cargar tareas');
-      const data = await response.json();
-      setTasks(data.data || []);
+      const response = await taskAPI.getAll({ assigneeId: userId });
+      setTasks((response as unknown as Task[]) || []);
     } catch (err) {
       setError('Error al cargar las tareas');
       console.error(err);
     } finally {
       setIsLoading(false);
+    }
+  }, []);
+
+  const loadProjects = useCallback(async (userId?: string) => {
+    try {
+      const projectsData = await projectAPI.getAll({ memberId: userId });
+      setProjects(projectsData || []);
+    } catch (err) {
+      console.error('Error al cargar proyectos para el selector:', err);
     }
   }, []);
 
@@ -52,22 +83,29 @@ export default function Tasks() {
       navigate('/login');
       return;
     }
-    setUser(JSON.parse(storedUser));
-    loadTasks();
-  }, [navigate, loadTasks]);
+    const parsedUser = JSON.parse(storedUser);
+    setUser(parsedUser);
+    loadTasks(parsedUser.id);
+    loadProjects(parsedUser.id);
+  }, [navigate, loadTasks, loadProjects]);
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+      if (!user) throw new Error('Usuario no autenticado');
+      await taskAPI.create({
+        ...formData,
+        assigneeId: user.id,
+        status: 'TODO',
       });
-      if (!response.ok) throw new Error('Error al crear tarea');
-      setFormData({ title: '', description: '', deadline: '' });
+      setFormData({
+        title: '',
+        description: '',
+        deadline: '',
+        projectId: '',
+      });
       setShowModal(false);
-      await loadTasks();
+      await loadTasks(user.id);
     } catch (err) {
       setError('Error al crear la tarea');
       console.error(err);
@@ -79,32 +117,56 @@ export default function Tasks() {
     try {
       const response = await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
       if (!response.ok) throw new Error('Error al eliminar tarea');
-      await loadTasks();
+      if (user) await loadTasks(user.id);
     } catch (err) {
       setError('Error al eliminar la tarea');
       console.error(err);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      PENDING: 'bg-yellow-100 text-yellow-700',
-      IN_PROGRESS: 'bg-blue-100 text-blue-700',
-      COMPLETED: 'bg-green-100 text-green-700',
-      CANCELLED: 'bg-gray-100 text-gray-700',
-    };
-    return colors[status] || 'bg-gray-100 text-gray-700';
+  const onDragEnd = async (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+
+    if (!destination) return;
+
+    if (
+      destination.droppableId === source.droppableId &&
+      destination.index === source.index
+    ) {
+      return;
+    }
+
+    const newStatus = destination.droppableId;
+
+    // Optimistic update
+    const updatedTasks = tasks.map((task) =>
+      task.id === draggableId ? { ...task, status: newStatus } : task,
+    );
+    setTasks(updatedTasks);
+
+    try {
+      await taskAPI.update(draggableId, { status: newStatus });
+    } catch (err) {
+      console.error('Error updating task status:', err);
+      setError('Error al actualizar el estado de la tarea');
+      // Revert on error
+      if (user) loadTasks(user.id);
+    }
+  };
+
+  const getTasksByStatus = (status: string) => {
+    return tasks.filter((task) => (task.status || 'TODO') === status);
   };
 
   return (
     <AppShell user={user || undefined}>
-      <div className="p-8 max-w-7xl mx-auto">
+      <div className="p-8 max-w-7xl mx-auto h-full flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900">Tareas</h2>
+            <h2 className="text-3xl font-bold text-gray-900">Mis Tareas</h2>
             <p className="text-gray-600 mt-2">
-              Gestiona todas tus tareas de trabajo
+              Tablero Kanban de tus tareas asignadas
             </p>
           </div>
           <button
@@ -131,81 +193,81 @@ export default function Tasks() {
           </div>
         )}
 
-        {/* Tasks Table */}
-        {!isLoading && tasks.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                    Título
-                  </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                    Estado
-                  </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                    Vencimiento
-                  </th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-900">
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {tasks.map((task) => (
-                  <tr key={task.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      <div>
-                        <p className="font-medium">{task.title}</p>
-                        <p className="text-gray-500 text-xs">
-                          {task.description}
-                        </p>
+        {/* Kanban Board */}
+        {!isLoading && (
+          <DragDropContext onDragEnd={onDragEnd}>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
+              {Object.entries(COLUMNS).map(([statusKey, statusLabel]) => (
+                <div
+                  key={statusKey}
+                  className="bg-gray-100 rounded-lg p-4 flex flex-col h-full min-h-[500px]"
+                >
+                  <h3 className="font-bold text-gray-700 mb-4 flex justify-between items-center">
+                    {statusLabel}
+                    <span className="bg-gray-200 text-gray-600 px-2 py-1 rounded-full text-xs">
+                      {getTasksByStatus(statusKey).length}
+                    </span>
+                  </h3>
+                  <Droppable droppableId={statusKey}>
+                    {(provided) => (
+                      <div
+                        {...provided.droppableProps}
+                        ref={provided.innerRef}
+                        className="flex-1 space-y-3"
+                      >
+                        {getTasksByStatus(statusKey).map((task, index) => (
+                          <Draggable
+                            key={task.id}
+                            draggableId={task.id}
+                            index={index}
+                          >
+                            {(provided) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                {...provided.dragHandleProps}
+                                className="bg-white p-4 rounded shadow-sm hover:shadow-md transition-shadow"
+                              >
+                                <div className="flex justify-between items-start mb-2">
+                                  <h4 className="font-semibold text-gray-800">
+                                    {task.title}
+                                  </h4>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteTask(task.id)}
+                                    className="text-red-400 hover:text-red-600"
+                                    title="Eliminar"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                                <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                                  {task.description}
+                                </p>
+                                <div className="flex justify-between items-center text-xs text-gray-500">
+                                  <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                                    {task.project?.name}
+                                  </span>
+                                  {task.deadline && (
+                                    <span>
+                                      {new Date(
+                                        task.deadline,
+                                      ).toLocaleDateString()}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm">
-                      <span
-                        className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(task.status)}`}
-                      >
-                        {task.status || 'PENDING'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {task.deadline
-                        ? new Date(task.deadline).toLocaleDateString()
-                        : '-'}
-                    </td>
-                    <td className="px-6 py-4 text-sm space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteTask(task.id)}
-                        className="text-red-600 hover:text-red-700 font-medium"
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Empty State */}
-        {!isLoading && tasks.length === 0 && (
-          <div className="text-center py-16">
-            <div className="text-5xl mb-4">✓</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              No hay tareas
-            </h3>
-            <p className="text-gray-600 mb-6">¡Todo está al día!</p>
-            <button
-              type="button"
-              onClick={() => setShowModal(true)}
-              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium"
-            >
-              Crear Tarea
-            </button>
-          </div>
+                    )}
+                  </Droppable>
+                </div>
+              ))}
+            </div>
+          </DragDropContext>
         )}
 
         {/* Modal */}
@@ -234,6 +296,30 @@ export default function Tasks() {
                     placeholder="Título de la tarea"
                     required
                   />
+                </div>
+                <div className="mb-4">
+                  <label
+                    htmlFor="task-project"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Proyecto
+                  </label>
+                  <select
+                    id="task-project"
+                    value={formData.projectId}
+                    onChange={(e) =>
+                      setFormData({ ...formData, projectId: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  >
+                    <option value="">Selecciona un proyecto</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="mb-4">
                   <label
