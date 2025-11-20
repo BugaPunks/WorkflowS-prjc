@@ -3,9 +3,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 interface SidebarProps {
   isOpen: boolean;
   user?: { id: string; name: string; email: string; role: string };
+  onClose?: () => void; // Added for mobile close
 }
 
-export default function Sidebar({ isOpen, user }: SidebarProps) {
+export default function Sidebar({ isOpen, user, onClose }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -79,6 +80,7 @@ export default function Sidebar({ isOpen, user }: SidebarProps) {
               </div>
             </div>
             <button
+              type="button"
               onClick={handleLogout}
               className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
             >
@@ -91,9 +93,14 @@ export default function Sidebar({ isOpen, user }: SidebarProps) {
       {/* Mobile Sidebar */}
       {isOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <div
-            className="absolute inset-0 bg-black bg-opacity-50"
-            onClick={() => {}}
+          <button
+            type="button"
+            className="absolute inset-0 bg-black bg-opacity-50 w-full h-full cursor-default"
+            onClick={onClose}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape' && onClose) onClose();
+            }}
+            aria-label="Cerrar menú"
           />
           <aside className="absolute left-0 top-0 bottom-0 w-64 bg-gray-900 text-white flex flex-col">
             <div className="flex items-center justify-center h-16 border-b border-gray-700">
@@ -104,6 +111,7 @@ export default function Sidebar({ isOpen, user }: SidebarProps) {
                 <Link
                   key={item.href}
                   to={item.href}
+                  onClick={onClose}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                     isActive(item.href)
                       ? 'bg-blue-600 text-white'
@@ -115,6 +123,7 @@ export default function Sidebar({ isOpen, user }: SidebarProps) {
                 </Link>
               ))}
               <button
+                type="button"
                 onClick={handleLogout}
                 className="flex w-full items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-gray-800 transition-colors mt-4"
               >

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { projectAPI } from '@/api/client';
 import AppShell from '@/components/AppShell';
@@ -9,6 +9,7 @@ interface Sprint {
   startDate: string;
   endDate: string;
   status: string;
+  projectId?: string; // added
   backlogItems: {
     id: string;
     storyPoints: number | null;
@@ -28,7 +29,7 @@ export default function Reports() {
   const [selectedProject, setSelectedProject] = useState<string>('');
   const [selectedSprint, setSelectedSprint] = useState<string>('');
   const [sprintData, setSprintData] = useState<Sprint | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
@@ -64,7 +65,7 @@ export default function Reports() {
         .then((res) => res.json())
         .then((data) => {
           const projSprints = data.data.filter(
-            (s: any) => s.projectId === selectedProject,
+            (s: Sprint) => s.projectId === selectedProject,
           );
           if (projSprints.length > 0) {
             setSprintData(projSprints[0]); // Default to first
@@ -87,7 +88,7 @@ export default function Reports() {
 
   // Burndown Calculation (Simple Mock)
   const getBurndownData = () => {
-    if (!sprintData || !sprintData.backlogItems) return [];
+    if (!sprintData || !sprintData.backlogItems) return null;
 
     const totalPoints = sprintData.backlogItems.reduce(
       (acc, item) => acc + (item.storyPoints || 0),
@@ -95,7 +96,7 @@ export default function Reports() {
     );
     const days = 14; // Assuming 2 weeks sprint
     const data = [];
-    const currentPoints = totalPoints;
+    // const currentPoints = totalPoints; // unused
     const decrement = totalPoints / days; // Linear ideal
 
     for (let i = 0; i <= days; i++) {
@@ -108,10 +109,9 @@ export default function Reports() {
     return { totalPoints, data };
   };
 
-  const { totalPoints, data: chartData } = getBurndownData() || {
-    totalPoints: 0,
-    data: [],
-  };
+  const burndown = getBurndownData();
+  const totalPoints = burndown ? burndown.totalPoints : 0;
+  const chartData = burndown ? burndown.data : [];
 
   return (
     <AppShell>
@@ -123,10 +123,14 @@ export default function Reports() {
         <div className="bg-white p-6 rounded-lg shadow-md mb-8">
           <div className="flex gap-4 mb-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="project-select"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Proyecto
               </label>
               <select
+                id="project-select"
                 className="border rounded-md px-3 py-2"
                 value={selectedProject}
                 onChange={(e) => setSelectedProject(e.target.value)}
@@ -139,10 +143,14 @@ export default function Reports() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label
+                htmlFor="sprint-select"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
                 Sprint
               </label>
               <select
+                id="sprint-select"
                 className="border rounded-md px-3 py-2"
                 value={selectedSprint}
                 onChange={(e) => handleSprintChange(e.target.value)}
@@ -168,22 +176,26 @@ export default function Reports() {
 
               {/* Simple CSS Chart */}
               <div className="h-64 border-l border-b border-gray-300 relative mt-8 flex items-end justify-between px-2">
-                {chartData.map((d, i) => (
+                {chartData.map((d) => (
                   <div
-                    key={i}
+                    key={d.day}
                     className="relative flex flex-col items-center justify-end h-full w-full"
                   >
                     {/* Ideal Line (Dots) */}
                     <div
                       className="absolute w-2 h-2 bg-gray-300 rounded-full"
-                      style={{ bottom: `${(d.ideal / totalPoints) * 100}%` }}
+                      style={{
+                        bottom: `${(d.ideal / (totalPoints || 1)) * 100}%`,
+                      }}
                       title={`Ideal: ${d.ideal.toFixed(1)}`}
                     />
                     {/* Actual Bar */}
                     {d.actual !== null && (
                       <div
                         className="w-4 bg-blue-500 rounded-t opacity-80 hover:opacity-100 transition-all"
-                        style={{ height: `${(d.actual / totalPoints) * 100}%` }}
+                        style={{
+                          height: `${(d.actual / (totalPoints || 1)) * 100}%`,
+                        }}
                         title={`Actual: ${d.actual.toFixed(1)}`}
                       />
                     )}

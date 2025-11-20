@@ -9,7 +9,6 @@ import { LoginForm } from '@/auth/LoginForm';
 import { LoginSuccess } from '@/auth/LoginSuccess';
 import { RegisterForm } from '@/auth/RegisterForm';
 import { SessionProvider } from '@/hooks/useSession';
-import ComingSoon from '@/pages/ComingSoon';
 import Evaluations from '@/pages/Evaluations';
 import ProjectDetail from '@/pages/ProjectDetail';
 import Projects from '@/pages/Projects';

@@ -24,7 +24,7 @@ router.get('/', async (req, res) => {
         evaluations: true,
       },
     });
-    res.json({ data: tasks });
+    res.json(tasks);
   } catch {
     res.status(500).json({ error: 'Error al obtener tareas' });
   }

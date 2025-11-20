@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
         sprints: true,
       },
     });
-    res.json({ data: projects });
+    res.json(projects);
   } catch (error) {
     console.error('Error al obtener proyectos:', error);
     res.status(500).json({

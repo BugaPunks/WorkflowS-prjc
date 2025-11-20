@@ -59,7 +59,7 @@ export default function Tasks() {
     try {
       setIsLoading(true);
       const response = await taskAPI.getAll({ assigneeId: userId });
-      setTasks((response as unknown as Task[]) || []);
+      setTasks((response as Task[]) || []);
     } catch (err) {
       setError('Error al cargar las tareas');
       console.error(err);

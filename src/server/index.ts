@@ -4,6 +4,8 @@ import 'dotenv/config';
 
 // Importar rutas
 import authRouter from './routes/auth';
+import chatRouter from './routes/chat';
+import documentsRouter from './routes/documents';
 import projectsRouter from './routes/projects';
 import sprintsRouter from './routes/sprints';
 import tasksRouter from './routes/tasks';
@@ -24,6 +26,8 @@ app.use('/api/projects', projectsRouter);
 app.use('/api/sprints', sprintsRouter);
 app.use('/api/tasks', tasksRouter);
 app.use('/api/user-stories', userStoriesRouter);
+app.use('/api/chat', chatRouter);
+app.use('/api/documents', documentsRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {
@@ -41,18 +45,9 @@ const server = app.listen(PORT, () => {
   console.log('📚 Rutas disponibles:');
   console.log('   POST   /api/auth/register');
   console.log('   POST   /api/auth/login');
-  console.log('   POST   /api/auth/logout');
-  console.log('   GET    /api/health');
-  console.log('   GET    /api/users');
-  console.log('   POST   /api/users');
   console.log('   GET    /api/projects');
-  console.log('   POST   /api/projects');
-  console.log('   GET    /api/sprints');
-  console.log('   POST   /api/sprints');
-  console.log('   GET    /api/tasks');
-  console.log('   POST   /api/tasks');
-  console.log('   GET    /api/user-stories');
-  console.log('   POST   /api/user-stories');
+  console.log('   POST   /api/chat/:projectId/messages');
+  console.log('   GET    /api/documents/:projectId');
 });
 
 export default server;

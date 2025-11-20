@@ -8,23 +8,94 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import AppShell from '@/components/AppShell';
 
-// ... imports ...
+// Types for internal state to avoid 'any'
+interface ChatUser {
+  id: string;
+  name: string;
+  email: string;
+}
+
+interface ChatMessage {
+  id: string;
+  user: { name: string };
+  content: string;
+  userId: string;
+}
+
+interface DocumentItem {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  uploadedAt: string;
+  url: string;
+}
+
+interface ProjectMemberDetails {
+  id: string;
+  userId: string;
+  role: string;
+  user?: {
+    name: string;
+    email: string;
+  };
+}
+
+interface AvailableUser {
+  id: string;
+  name: string;
+  email: string;
+}
 
 function ChatSection({ projectId }: { projectId: string }) {
-  // ... existing chat code ...
-  const [messages, setMessages] = useState<
-    { id: string; user: string; text: string }[]
-  >([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
+  const [currentUser, setCurrentUser] = useState<ChatUser | null>(null);
 
-  const handleSend = (e: React.FormEvent) => {
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) setCurrentUser(JSON.parse(userStr));
+  }, []);
+
+  const loadMessages = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/chat/${projectId}/messages`);
+      if (response.ok) {
+        const data = await response.json();
+        setMessages(data.data || []);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    loadMessages();
+    // Simple poll
+    const interval = setInterval(loadMessages, 5000);
+    return () => clearInterval(interval);
+  }, [loadMessages]);
+
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
-    setMessages([
-      ...messages,
-      { id: Date.now().toString(), user: 'Yo', text: input },
-    ]);
-    setInput('');
+    if (!input.trim() || !currentUser) return;
+
+    try {
+      const response = await fetch(`/api/chat/${projectId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          content: input,
+        }),
+      });
+      if (response.ok) {
+        setInput('');
+        loadMessages();
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -32,33 +103,44 @@ function ChatSection({ projectId }: { projectId: string }) {
       <h3 className="font-bold text-lg mb-4 border-b pb-2 text-gray-800">
         Chat del Equipo
       </h3>
-      <div className="flex-1 overflow-y-auto space-y-2 mb-4 p-2 bg-gray-50 rounded">
+      <div className="flex-1 overflow-y-auto space-y-4 mb-4 p-4 bg-gray-50 rounded">
         {messages.length === 0 && (
-          <p className="text-gray-400 text-sm text-center">
-            No hay mensajes aún.
+          <p className="text-gray-400 text-sm text-center py-8">
+            No hay mensajes aún. ¡Saluda a tu equipo!
           </p>
         )}
-        {messages.map((m) => (
-          <div
-            key={m.id}
-            className="bg-blue-100 p-2 rounded-lg self-end max-w-[80%]"
-          >
-            <p className="text-xs font-bold text-blue-800">{m.user}</p>
-            <p className="text-sm text-gray-800">{m.text}</p>
-          </div>
-        ))}
+        {messages.map((m) => {
+          const isMe = m.userId === currentUser?.id;
+          return (
+            <div
+              key={m.id}
+              className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
+            >
+              <div
+                className={`max-w-[80%] rounded-lg p-3 ${isMe ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-800'}`}
+              >
+                {!isMe && (
+                  <p className="text-xs font-bold mb-1 opacity-75">
+                    {m.user.name}
+                  </p>
+                )}
+                <p className="text-sm">{m.content}</p>
+              </div>
+            </div>
+          );
+        })}
       </div>
       <form onSubmit={handleSend} className="flex gap-2">
         <input
           type="text"
-          className="flex-1 border rounded px-3 py-2 text-gray-800"
+          className="flex-1 border rounded-lg px-4 py-2 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Escribe un mensaje..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
         />
         <button
           type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium transition-colors"
         >
           Enviar
         </button>
@@ -68,20 +150,121 @@ function ChatSection({ projectId }: { projectId: string }) {
 }
 
 function DocumentsSection({ projectId }: { projectId: string }) {
+  const [documents, setDocuments] = useState<DocumentItem[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  const loadDocs = useCallback(async () => {
+    try {
+      const response = await fetch(`/api/documents/${projectId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setDocuments(data.data || []);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    loadDocs();
+  }, [loadDocs]);
+
+  const handleUpload = async () => {
+    // Simulate file selection
+    const fileName = prompt('Nombre del archivo (Simulación):');
+    if (!fileName) return;
+
+    setUploading(true);
+    try {
+      const response = await fetch(`/api/documents/${projectId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: fileName,
+          type: fileName.split('.').pop()?.toUpperCase() || 'FILE',
+          size: Math.floor(Math.random() * 5000),
+        }),
+      });
+      if (response.ok) {
+        loadDocs();
+      }
+    } catch (_err) {
+      alert('Error al subir');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('¿Eliminar archivo?')) return;
+    try {
+      await fetch(`/api/documents/${id}`, { method: 'DELETE' });
+      loadDocs();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow p-4 h-96">
+    <div className="bg-white rounded-lg shadow p-4">
       <div className="flex justify-between items-center mb-4 border-b pb-2">
         <h3 className="font-bold text-lg text-gray-800">Documentos</h3>
-        <button className="text-sm bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded text-gray-700">
-          Subir Archivo
+        <button
+          type="button"
+          onClick={handleUpload}
+          disabled={uploading}
+          className="text-sm bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded font-medium transition-colors"
+        >
+          {uploading ? 'Subiendo...' : 'Subir Archivo'}
         </button>
       </div>
-      <div className="text-center py-12 text-gray-500 border-2 border-dashed border-gray-200 rounded-lg">
-        <p>No hay documentos compartidos.</p>
-        <p className="text-xs mt-1">
-          Arrastra archivos aquí o usa el botón de subir.
-        </p>
-      </div>
+
+      {documents.length === 0 ? (
+        <div className="text-center py-12 text-gray-500 border-2 border-dashed border-gray-200 rounded-lg bg-gray-50">
+          <div className="text-4xl mb-2">📂</div>
+          <p>No hay documentos compartidos.</p>
+          <p className="text-xs mt-1">
+            Usa el botón de arriba para subir archivos.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {documents.map((doc) => (
+            <div
+              key={doc.id}
+              className="border rounded-lg p-4 flex flex-col hover:shadow-md transition-shadow bg-white"
+            >
+              <div className="flex justify-between items-start mb-2">
+                <span className="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded uppercase">
+                  {doc.type}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(doc.id)}
+                  className="text-red-400 hover:text-red-600"
+                >
+                  ×
+                </button>
+              </div>
+              <p className="font-medium text-gray-800 truncate mb-1">
+                {doc.name}
+              </p>
+              <p className="text-xs text-gray-500 mb-3">
+                {(doc.size / 1024).toFixed(1)} KB •{' '}
+                {new Date(doc.uploadedAt).toLocaleDateString()}
+              </p>
+              <a
+                href={doc.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-center w-full block bg-gray-50 hover:bg-gray-100 text-blue-600 text-sm py-2 rounded mt-auto"
+              >
+                Descargar
+              </a>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -93,10 +276,10 @@ function MembersSection({
   projectId: string;
   isProjectAdmin: boolean;
 }) {
-  const [members, setMembers] = useState<any[]>([]);
+  const [members, setMembers] = useState<ProjectMemberDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<AvailableUser[]>([]);
   const [selectedUser, setSelectedUser] = useState('');
   const [selectedRole, setSelectedRole] = useState('TEAM_DEVELOPER');
 
@@ -120,7 +303,7 @@ function MembersSection({
       // Filter out already added members
       const memberIds = new Set(members.map((m) => m.userId));
       const availableUsers = (data.data || []).filter(
-        (u: any) => !memberIds.has(u.id),
+        (u: AvailableUser) => !memberIds.has(u.id),
       );
       setUsers(availableUsers);
     } catch (err) {
@@ -143,7 +326,7 @@ function MembersSection({
       if (!response.ok) throw new Error('Error al añadir miembro');
       setShowAddModal(false);
       loadMembers();
-    } catch (err) {
+    } catch (_err) {
       alert('Error al añadir miembro');
     }
   };
@@ -159,7 +342,7 @@ function MembersSection({
       );
       if (!response.ok) throw new Error('Error');
       loadMembers();
-    } catch (err) {
+    } catch (_err) {
       alert('Error al eliminar miembro');
     }
   };
@@ -170,6 +353,7 @@ function MembersSection({
         <h3 className="font-bold text-lg text-gray-800">Miembros del Equipo</h3>
         {isProjectAdmin && (
           <button
+            type="button"
             onClick={() => {
               loadUsers();
               setShowAddModal(true);
@@ -207,6 +391,7 @@ function MembersSection({
                 </span>
                 {isProjectAdmin && (
                   <button
+                    type="button"
                     onClick={() => handleRemoveMember(member.userId)}
                     className="text-red-400 hover:text-red-600"
                   >
@@ -230,10 +415,14 @@ function MembersSection({
             <h3 className="text-lg font-bold mb-4">Añadir Miembro</h3>
             <form onSubmit={handleAddMember}>
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1 text-gray-700">
+                <label
+                  htmlFor="user-select"
+                  className="block text-sm font-medium mb-1 text-gray-700"
+                >
                   Usuario
                 </label>
                 <select
+                  id="user-select"
                   className="w-full border rounded px-3 py-2"
                   value={selectedUser}
                   onChange={(e) => setSelectedUser(e.target.value)}
@@ -248,10 +437,14 @@ function MembersSection({
                 </select>
               </div>
               <div className="mb-6">
-                <label className="block text-sm font-medium mb-1 text-gray-700">
+                <label
+                  htmlFor="role-select"
+                  className="block text-sm font-medium mb-1 text-gray-700"
+                >
                   Rol Scrum
                 </label>
                 <select
+                  id="role-select"
                   className="w-full border rounded px-3 py-2"
                   value={selectedRole}
                   onChange={(e) => setSelectedRole(e.target.value)}
@@ -564,24 +757,28 @@ export default function ProjectDetail() {
             </div>
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={() => setActiveTab('board')}
                 className={`px-4 py-2 rounded-lg font-medium ${activeTab === 'board' ? 'bg-blue-100 text-blue-700' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
               >
                 Tablero & Sprints
               </button>
               <button
+                type="button"
                 onClick={() => setActiveTab('members')}
                 className={`px-4 py-2 rounded-lg font-medium ${activeTab === 'members' ? 'bg-blue-100 text-blue-700' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
               >
                 Miembros
               </button>
               <button
+                type="button"
                 onClick={() => setActiveTab('chat')}
                 className={`px-4 py-2 rounded-lg font-medium ${activeTab === 'chat' ? 'bg-blue-100 text-blue-700' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
               >
                 Chat
               </button>
               <button
+                type="button"
                 onClick={() => setActiveTab('docs')}
                 className={`px-4 py-2 rounded-lg font-medium ${activeTab === 'docs' ? 'bg-blue-100 text-blue-700' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
               >

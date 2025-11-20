@@ -33,7 +33,7 @@ export default function Projects() {
       const projectsData = await projectAPI.getAll({
         memberId: userId,
       });
-      setProjects(projectsData || []);
+      setProjects((projectsData as Project[]) || []);
     } catch (err) {
       setError('Error al cargar los proyectos');
       console.error(err);

@@ -34,6 +34,8 @@ model User {
   userStories        UserStory[]
   backlogItems       BacklogItem[]
   conversationParticipants ConversationParticipant[]
+  messages           Message[]
+  projectMemberships ProjectMember[]
 
   @@index([email])
   @@map("users")
@@ -59,9 +61,26 @@ model Project {
   evaluations Evaluation[]
   rubrics     Rubric[]
   chat        Chat[]
+  documents   Document[]
 
   @@index([ownerId])
   @@map("projects")
+}
+
+// Documentos
+model Document {
+  id          String   @id @default(cuid())
+  projectId   String
+  name        String
+  url         String   // Simulado
+  type        String   // PDF, DOCX, etc.
+  size        Int?     // KB
+  uploadedAt  DateTime @default(now())
+
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("documents")
 }
 
 // Miembros del proyecto
@@ -73,6 +92,7 @@ model ProjectMember {
   joinedAt  DateTime @default(now())
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, userId])
   @@map("project_members")
@@ -306,6 +326,7 @@ model Message {
   updatedAt      DateTime @updatedAt
 
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([conversationId])
   @@map("messages")
