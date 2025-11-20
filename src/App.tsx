@@ -13,6 +13,7 @@ import ComingSoon from '@/pages/ComingSoon';
 import Evaluations from '@/pages/Evaluations';
 import ProjectDetail from '@/pages/ProjectDetail';
 import Projects from '@/pages/Projects';
+import Reports from '@/pages/Reports'; // Import Reports
 import Sprints from '@/pages/Sprints';
 import Tasks from '@/pages/Tasks';
 import UserStories from '@/pages/UserStories';
@@ -33,16 +34,7 @@ const App = () => {
           <Route path="/sprints" element={<Sprints />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/user-stories" element={<UserStories />} />
-          <Route
-            path="/reports"
-            element={
-              <ComingSoon
-                title="Reportes"
-                description="Próximamente tendrás acceso a reportes detallados de tu proyecto"
-                icon="📈"
-              />
-            }
-          />
+          <Route path="/reports" element={<Reports />} />
           <Route path="/evaluations" element={<Evaluations />} />
 
           {/* Redirección por defecto */}

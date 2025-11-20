@@ -8,6 +8,85 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import AppShell from '@/components/AppShell';
 
+// ... imports ...
+
+// Components for Chat and Documents (Modules 8)
+function ChatSection({ projectId }: { projectId: string }) {
+  const [messages, setMessages] = useState<
+    { id: string; user: string; text: string }[]
+  >([]);
+  const [input, setInput] = useState('');
+
+  const handleSend = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+    // Mock send
+    setMessages([
+      ...messages,
+      { id: Date.now().toString(), user: 'Yo', text: input },
+    ]);
+    setInput('');
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow p-4 h-96 flex flex-col">
+      <h3 className="font-bold text-lg mb-4 border-b pb-2 text-gray-800">
+        Chat del Equipo
+      </h3>
+      <div className="flex-1 overflow-y-auto space-y-2 mb-4 p-2 bg-gray-50 rounded">
+        {messages.length === 0 && (
+          <p className="text-gray-400 text-sm text-center">
+            No hay mensajes aún.
+          </p>
+        )}
+        {messages.map((m) => (
+          <div
+            key={m.id}
+            className="bg-blue-100 p-2 rounded-lg self-end max-w-[80%]"
+          >
+            <p className="text-xs font-bold text-blue-800">{m.user}</p>
+            <p className="text-sm text-gray-800">{m.text}</p>
+          </div>
+        ))}
+      </div>
+      <form onSubmit={handleSend} className="flex gap-2">
+        <input
+          type="text"
+          className="flex-1 border rounded px-3 py-2 text-gray-800"
+          placeholder="Escribe un mensaje..."
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+        />
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          Enviar
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function DocumentsSection({ projectId }: { projectId: string }) {
+  return (
+    <div className="bg-white rounded-lg shadow p-4 h-96">
+      <div className="flex justify-between items-center mb-4 border-b pb-2">
+        <h3 className="font-bold text-lg text-gray-800">Documentos</h3>
+        <button className="text-sm bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded text-gray-700">
+          Subir Archivo
+        </button>
+      </div>
+      <div className="text-center py-12 text-gray-500 border-2 border-dashed border-gray-200 rounded-lg">
+        <p>No hay documentos compartidos.</p>
+        <p className="text-xs mt-1">
+          Arrastra archivos aquí o usa el botón de subir.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 interface ProjectMember {
   userId: string;
   role: string;
@@ -66,6 +145,9 @@ export default function ProjectDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showSprintModal, setShowSprintModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'board' | 'chat' | 'docs'>(
+    'board',
+  ); // Tab state
   const [sprintForm, setSprintForm] = useState({
     name: '',
     description: '',
@@ -268,7 +350,7 @@ export default function ProjectDetail() {
     <AppShell user={user || undefined}>
       <div className="p-8 max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6">
           <button
             type="button"
             onClick={() => navigate('/projects')}
@@ -276,171 +358,203 @@ export default function ProjectDetail() {
           >
             ← Volver a Proyectos
           </button>
-          <h1 className="text-4xl font-bold text-gray-900">{project.name}</h1>
-          <p className="text-gray-600 mt-2">{project.description}</p>
+          <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900">
+                {project.name}
+              </h1>
+              <p className="text-gray-600 mt-2">{project.description}</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setActiveTab('board')}
+                className={`px-4 py-2 rounded-lg font-medium ${activeTab === 'board' ? 'bg-blue-100 text-blue-700' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+              >
+                Tablero & Sprints
+              </button>
+              <button
+                onClick={() => setActiveTab('chat')}
+                className={`px-4 py-2 rounded-lg font-medium ${activeTab === 'chat' ? 'bg-blue-100 text-blue-700' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+              >
+                Chat
+              </button>
+              <button
+                onClick={() => setActiveTab('docs')}
+                className={`px-4 py-2 rounded-lg font-medium ${activeTab === 'docs' ? 'bg-blue-100 text-blue-700' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+              >
+                Documentos
+              </button>
+            </div>
+          </div>
         </div>
 
-        <DragDropContext onDragEnd={onDragEnd}>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* BACKLOG SECTION */}
-            <div className="bg-gray-50 p-4 rounded-lg shadow-inner h-fit">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-bold text-gray-700">
-                  Backlog (Historias)
-                </h2>
-                <span className="bg-gray-200 text-gray-600 px-2 py-1 rounded-full text-xs">
-                  {backlogStories.length}
-                </span>
+        {activeTab === 'chat' && <ChatSection projectId={project.id} />}
+        {activeTab === 'docs' && <DocumentsSection projectId={project.id} />}
+
+        {activeTab === 'board' && (
+          <DragDropContext onDragEnd={onDragEnd}>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* BACKLOG SECTION */}
+              <div className="bg-gray-50 p-4 rounded-lg shadow-inner h-fit">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-lg font-bold text-gray-700">
+                    Backlog (Historias)
+                  </h2>
+                  <span className="bg-gray-200 text-gray-600 px-2 py-1 rounded-full text-xs">
+                    {backlogStories.length}
+                  </span>
+                </div>
+
+                <Droppable droppableId="backlog">
+                  {(provided) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className="space-y-3 min-h-[200px]"
+                    >
+                      {backlogStories.length === 0 && (
+                        <p className="text-sm text-gray-500 text-center py-4">
+                          No hay historias sin asignar.
+                        </p>
+                      )}
+                      {backlogStories.map((story, index) => (
+                        <Draggable
+                          key={story.id}
+                          draggableId={story.id}
+                          index={index}
+                        >
+                          {(provided) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className="bg-white p-3 rounded shadow-sm hover:shadow-md border border-gray-200 cursor-grab"
+                            >
+                              <h3 className="font-medium text-sm text-gray-800">
+                                {story.title}
+                              </h3>
+                              <div className="flex justify-between items-center mt-2">
+                                <span
+                                  className={`text-xs px-2 py-0.5 rounded-full ${
+                                    story.priority === 'HIGH'
+                                      ? 'bg-orange-100 text-orange-700'
+                                      : story.priority === 'CRITICAL'
+                                        ? 'bg-red-100 text-red-700'
+                                        : 'bg-green-100 text-green-700'
+                                  }`}
+                                >
+                                  {story.priority}
+                                </span>
+                                {story.storyPoints && (
+                                  <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                                    {story.storyPoints} pts
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
               </div>
 
-              <Droppable droppableId="backlog">
-                {(provided) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    className="space-y-3 min-h-[200px]"
-                  >
-                    {backlogStories.length === 0 && (
-                      <p className="text-sm text-gray-500 text-center py-4">
-                        No hay historias sin asignar.
-                      </p>
-                    )}
-                    {backlogStories.map((story, index) => (
-                      <Draggable
-                        key={story.id}
-                        draggableId={story.id}
-                        index={index}
-                      >
+              {/* SPRINTS SECTION */}
+              <div className="lg:col-span-2 space-y-6">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-2xl font-bold text-gray-900">Sprints</h2>
+                  {isProjectAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => setShowSprintModal(true)}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium"
+                    >
+                      + Nuevo Sprint
+                    </button>
+                  )}
+                </div>
+
+                {sprints.length === 0 ? (
+                  <div className="text-center py-12 bg-white rounded-lg border border-dashed border-gray-300">
+                    <p className="text-gray-500">No hay sprints activos.</p>
+                  </div>
+                ) : (
+                  sprints.map((sprint) => (
+                    <div
+                      key={sprint.id}
+                      className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden"
+                    >
+                      <div className="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                        <div>
+                          <h3 className="font-bold text-lg text-gray-800">
+                            {sprint.name}
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            {new Date(sprint.startDate).toLocaleDateString()} -{' '}
+                            {new Date(sprint.endDate).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            sprint.status === 'ACTIVE'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-gray-200 text-gray-700'
+                          }`}
+                        >
+                          {sprint.status}
+                        </span>
+                      </div>
+
+                      <Droppable droppableId={`sprint-${sprint.id}`}>
                         {(provided) => (
                           <div
                             ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            className="bg-white p-3 rounded shadow-sm hover:shadow-md border border-gray-200 cursor-grab"
+                            {...provided.droppableProps}
+                            className="p-4 min-h-[100px] bg-white"
                           >
-                            <h3 className="font-medium text-sm text-gray-800">
-                              {story.title}
-                            </h3>
-                            <div className="flex justify-between items-center mt-2">
-                              <span
-                                className={`text-xs px-2 py-0.5 rounded-full ${
-                                  story.priority === 'HIGH'
-                                    ? 'bg-orange-100 text-orange-700'
-                                    : story.priority === 'CRITICAL'
-                                      ? 'bg-red-100 text-red-700'
-                                      : 'bg-green-100 text-green-700'
-                                }`}
-                              >
-                                {story.priority}
-                              </span>
-                              {story.storyPoints && (
-                                <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-                                  {story.storyPoints} pts
-                                </span>
-                              )}
-                            </div>
+                            {!sprint.backlogItems ||
+                            sprint.backlogItems.length === 0 ? (
+                              <div className="text-center py-6 text-gray-400 text-sm border-2 border-dashed border-gray-100 rounded">
+                                Arrastra historias aquí para planificar el
+                                sprint
+                              </div>
+                            ) : (
+                              <div className="space-y-2">
+                                {sprint.backlogItems.map((item) => (
+                                  <div
+                                    key={item.id}
+                                    className="flex items-center justify-between p-3 bg-blue-50 rounded border border-blue-100"
+                                  >
+                                    <div>
+                                      <p className="font-medium text-sm text-blue-900">
+                                        {item.userStory.title}
+                                      </p>
+                                      <p className="text-xs text-blue-600 mt-0.5 line-clamp-1">
+                                        {item.userStory.description}
+                                      </p>
+                                    </div>
+                                    {item.userStory.storyPoints && (
+                                      <span className="text-xs font-bold bg-white text-blue-600 px-2 py-1 rounded border border-blue-100">
+                                        {item.userStory.storyPoints}
+                                      </span>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            {provided.placeholder}
                           </div>
                         )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                  </div>
-                )}
-              </Droppable>
-            </div>
-
-            {/* SPRINTS SECTION */}
-            <div className="lg:col-span-2 space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-900">Sprints</h2>
-                {isProjectAdmin && (
-                  <button
-                    type="button"
-                    onClick={() => setShowSprintModal(true)}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium"
-                  >
-                    + Nuevo Sprint
-                  </button>
+                      </Droppable>
+                    </div>
+                  ))
                 )}
               </div>
-
-              {sprints.length === 0 ? (
-                <div className="text-center py-12 bg-white rounded-lg border border-dashed border-gray-300">
-                  <p className="text-gray-500">No hay sprints activos.</p>
-                </div>
-              ) : (
-                sprints.map((sprint) => (
-                  <div
-                    key={sprint.id}
-                    className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden"
-                  >
-                    <div className="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-                      <div>
-                        <h3 className="font-bold text-lg text-gray-800">
-                          {sprint.name}
-                        </h3>
-                        <p className="text-xs text-gray-500">
-                          {new Date(sprint.startDate).toLocaleDateString()} -{' '}
-                          {new Date(sprint.endDate).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-bold ${
-                          sprint.status === 'ACTIVE'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-200 text-gray-700'
-                        }`}
-                      >
-                        {sprint.status}
-                      </span>
-                    </div>
-
-                    <Droppable droppableId={`sprint-${sprint.id}`}>
-                      {(provided) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.droppableProps}
-                          className="p-4 min-h-[100px] bg-white"
-                        >
-                          {!sprint.backlogItems ||
-                          sprint.backlogItems.length === 0 ? (
-                            <div className="text-center py-6 text-gray-400 text-sm border-2 border-dashed border-gray-100 rounded">
-                              Arrastra historias aquí para planificar el sprint
-                            </div>
-                          ) : (
-                            <div className="space-y-2">
-                              {sprint.backlogItems.map((item) => (
-                                <div
-                                  key={item.id}
-                                  className="flex items-center justify-between p-3 bg-blue-50 rounded border border-blue-100"
-                                >
-                                  <div>
-                                    <p className="font-medium text-sm text-blue-900">
-                                      {item.userStory.title}
-                                    </p>
-                                    <p className="text-xs text-blue-600 mt-0.5 line-clamp-1">
-                                      {item.userStory.description}
-                                    </p>
-                                  </div>
-                                  {item.userStory.storyPoints && (
-                                    <span className="text-xs font-bold bg-white text-blue-600 px-2 py-1 rounded border border-blue-100">
-                                      {item.userStory.storyPoints}
-                                    </span>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          {provided.placeholder}
-                        </div>
-                      )}
-                    </Droppable>
-                  </div>
-                ))
-              )}
             </div>
-          </div>
-        </DragDropContext>
+          </DragDropContext>
+        )}
 
         {/* Sprint Modal */}
         {showSprintModal && (

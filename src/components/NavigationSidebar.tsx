@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -7,6 +7,7 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, user }: SidebarProps) {
   const location = useLocation();
+  const navigate = useNavigate();
 
   const navItems = [
     { label: 'Proyectos', href: '/projects', icon: '📊' },
@@ -28,6 +29,11 @@ export default function Sidebar({ isOpen, user }: SidebarProps) {
   });
 
   const isActive = (href: string) => location.pathname === href;
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
 
   return (
     <>
@@ -60,18 +66,24 @@ export default function Sidebar({ isOpen, user }: SidebarProps) {
           ))}
         </nav>
 
-        {/* User Info */}
+        {/* User Info & Logout */}
         {isOpen && (
           <div className="border-t border-gray-700 p-4">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 mb-3">
               <div className="w-10 h-10 bg-linear-to-br from-blue-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
                 {user?.name?.charAt(0).toUpperCase()}
               </div>
-              <div className="text-sm">
-                <p className="font-medium">{user?.name}</p>
-                <p className="text-gray-400 text-xs">{user?.role}</p>
+              <div className="text-sm overflow-hidden">
+                <p className="font-medium truncate">{user?.name}</p>
+                <p className="text-gray-400 text-xs truncate">{user?.role}</p>
               </div>
             </div>
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              <span>🚪</span> Cerrar Sesión
+            </button>
           </div>
         )}
       </aside>
@@ -79,7 +91,10 @@ export default function Sidebar({ isOpen, user }: SidebarProps) {
       {/* Mobile Sidebar */}
       {isOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="absolute inset-0 bg-black bg-opacity-50" />
+          <div
+            className="absolute inset-0 bg-black bg-opacity-50"
+            onClick={() => {}}
+          />
           <aside className="absolute left-0 top-0 bottom-0 w-64 bg-gray-900 text-white flex flex-col">
             <div className="flex items-center justify-center h-16 border-b border-gray-700">
               <span className="font-bold text-xl">WorkflowS</span>
@@ -99,6 +114,13 @@ export default function Sidebar({ isOpen, user }: SidebarProps) {
                   <span className="font-medium">{item.label}</span>
                 </Link>
               ))}
+              <button
+                onClick={handleLogout}
+                className="flex w-full items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-gray-800 transition-colors mt-4"
+              >
+                <span className="text-xl">🚪</span>
+                <span className="font-medium">Cerrar Sesión</span>
+              </button>
             </nav>
           </aside>
         </div>
