@@ -2,7 +2,6 @@ import { Link, useLocation } from 'react-router-dom';
 
 interface SidebarProps {
   isOpen: boolean;
-  onToggle: () => void;
   user?: { id: string; name: string; email: string; role: string };
 }
 

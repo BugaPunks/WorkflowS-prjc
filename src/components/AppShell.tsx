@@ -1,6 +1,6 @@
 import type React from 'react';
 import NavigationSidebar from '@/components/NavigationSidebar';
-import SidebarProvider, { useSidebar } from '@/islands/SidebarProvider';
+import SidebarProvider from '@/islands/SidebarProvider';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -35,7 +35,7 @@ function AppShellComponent({
     return <div className="flex min-h-screen w-full flex-col">{children}</div>;
   }
 
-  return <SidebarLayout children={children} user={user} />;
+  return <SidebarLayout user={user}>{children}</SidebarLayout>;
 }
 
 export default AppShellComponent;
