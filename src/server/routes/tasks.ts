@@ -21,6 +21,7 @@ router.get('/', async (req, res) => {
         project: {
           select: { id: true, name: true },
         },
+        evaluations: true,
       },
     });
     res.json({ data: tasks });
@@ -107,6 +108,37 @@ router.delete('/:id', async (req, res) => {
     res.json({ message: 'Tarea eliminada' });
   } catch {
     res.status(500).json({ error: 'Error al eliminar tarea' });
+  }
+});
+
+// POST evaluar tarea
+router.post('/:id/evaluate', async (req, res) => {
+  try {
+    const { score, feedback, evaluatorId } = req.body;
+    const taskId = req.params.id;
+
+    if (score === undefined || !evaluatorId) {
+      return res.status(400).json({ error: 'Faltan campos requeridos' });
+    }
+
+    const task = await prisma.task.findUnique({ where: { id: taskId } });
+    if (!task) return res.status(404).json({ error: 'Tarea no encontrada' });
+
+    const evaluation = await prisma.evaluation.create({
+      data: {
+        taskId,
+        projectId: task.projectId,
+        evaluatorId,
+        score,
+        feedback,
+        status: 'COMPLETED',
+      },
+    });
+
+    res.status(201).json({ data: evaluation });
+  } catch (error) {
+    console.error('Error al evaluar tarea:', error);
+    res.status(500).json({ error: 'Error al guardar la evaluación' });
   }
 });
 

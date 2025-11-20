@@ -10,6 +10,7 @@ import { LoginSuccess } from '@/auth/LoginSuccess';
 import { RegisterForm } from '@/auth/RegisterForm';
 import { SessionProvider } from '@/hooks/useSession';
 import ComingSoon from '@/pages/ComingSoon';
+import Evaluations from '@/pages/Evaluations';
 import ProjectDetail from '@/pages/ProjectDetail';
 import Projects from '@/pages/Projects';
 import Sprints from '@/pages/Sprints';
@@ -42,16 +43,7 @@ const App = () => {
               />
             }
           />
-          <Route
-            path="/evaluations"
-            element={
-              <ComingSoon
-                title="Evaluaciones"
-                description="Las evaluaciones estarán disponibles muy pronto"
-                icon="⭐"
-              />
-            }
-          />
+          <Route path="/evaluations" element={<Evaluations />} />
 
           {/* Redirección por defecto */}
           <Route path="/" element={<Navigate to="/projects" replace />} />

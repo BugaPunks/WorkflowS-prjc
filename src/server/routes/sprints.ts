@@ -10,6 +10,11 @@ router.get('/', async (_req, res) => {
       include: {
         project: true,
         tasks: true,
+        backlogItems: {
+          include: {
+            userStory: true,
+          },
+        },
       },
     });
     res.json({ data: sprints });
@@ -30,6 +35,11 @@ router.get('/:id', async (req, res) => {
       include: {
         project: true,
         tasks: true,
+        backlogItems: {
+          include: {
+            userStory: true,
+          },
+        },
       },
     });
     if (!sprint) return res.status(404).json({ error: 'Sprint no encontrado' });
@@ -85,6 +95,63 @@ router.put('/:id', async (req, res) => {
     console.error('Error al actualizar sprint:', error);
     res.status(500).json({
       error: 'Error al actualizar sprint',
+      details: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+// POST agregar historia de usuario a sprint
+router.post('/:id/add-story', async (req, res) => {
+  try {
+    const { userStoryId } = req.body;
+    const sprintId = req.params.id;
+
+    if (!userStoryId) {
+      return res.status(400).json({ error: 'Falta userStoryId' });
+    }
+
+    // Verificar si ya existe un BacklogItem para esta historia en este sprint
+    const existingItem = await prisma.backlogItem.findFirst({
+      where: {
+        sprintId,
+        userStoryId,
+      },
+    });
+
+    if (existingItem) {
+      return res
+        .status(400)
+        .json({ error: 'La historia ya está en el sprint' });
+    }
+
+    // Obtener la historia para copiar detalles
+    const userStory = await prisma.userStory.findUnique({
+      where: { id: userStoryId },
+    });
+
+    if (!userStory) {
+      return res.status(404).json({ error: 'Historia no encontrada' });
+    }
+
+    // Crear BacklogItem
+    const backlogItem = await prisma.backlogItem.create({
+      data: {
+        sprintId,
+        userStoryId,
+        projectId: userStory.projectId,
+        title: userStory.title,
+        description: userStory.description,
+        priority: userStory.priority,
+        storyPoints: userStory.storyPoints,
+        status: 'TODO',
+      },
+    });
+
+    res.status(201).json({ data: backlogItem });
+  } catch (error) {
+    console.error('Error al agregar historia al sprint:', error);
+    res.status(500).json({
+      error: 'Error al agregar historia al sprint',
       details: error instanceof Error ? error.message : 'Unknown error',
     });
   }
