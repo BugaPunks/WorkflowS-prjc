@@ -114,7 +114,7 @@ router.delete('/:id', async (req, res) => {
 // POST evaluar tarea
 router.post('/:id/evaluate', async (req, res) => {
   try {
-    const { score, feedback, evaluatorId } = req.body;
+    const { score, feedback, evaluatorId, criteriaScores } = req.body; // criteriaScores: { criteriaId: string, score: number }[]
     const taskId = req.params.id;
 
     if (score === undefined || !evaluatorId) {
@@ -124,15 +124,34 @@ router.post('/:id/evaluate', async (req, res) => {
     const task = await prisma.task.findUnique({ where: { id: taskId } });
     if (!task) return res.status(404).json({ error: 'Tarea no encontrada' });
 
-    const evaluation = await prisma.evaluation.create({
-      data: {
-        taskId,
-        projectId: task.projectId,
-        evaluatorId,
-        score,
-        feedback,
-        status: 'COMPLETED',
-      },
+    // Use transaction for atomic creation
+    const evaluation = await prisma.$transaction(async (tx) => {
+      const newEvaluation = await tx.evaluation.create({
+        data: {
+          taskId,
+          projectId: task.projectId,
+          evaluatorId,
+          score, // Total score calculated by frontend or re-verified here
+          feedback,
+          status: 'COMPLETED',
+        },
+      });
+
+      if (criteriaScores && Array.isArray(criteriaScores)) {
+        await tx.evaluationCriteria.createMany({
+          data: criteriaScores.map(
+            (cs: { criteriaId: string; score: number }) => ({
+              evaluationId: newEvaluation.id,
+              criteriaId: cs.criteriaId,
+              score: cs.score,
+            }),
+          ),
+        });
+      }
+
+      // Update task status if needed, or maybe it stays completed
+
+      return newEvaluation;
     });
 
     res.status(201).json({ data: evaluation });

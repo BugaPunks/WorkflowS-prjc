@@ -5,6 +5,7 @@ interface Task {
   id: string;
   title: string;
   status: string;
+  projectId: string; // Added for fetching rubrics
   project: {
     id: string;
     name: string;
@@ -22,12 +23,34 @@ interface Evaluation {
   evaluatorId: string;
 }
 
+interface Criteria {
+  id: string;
+  name: string;
+  maxScore: number;
+  weight: number;
+}
+
+interface Rubric {
+  id: string;
+  name: string;
+  criteria: Criteria[];
+}
+
 export default function Evaluations() {
   const { session: user } = useSession();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [evalForm, setEvalForm] = useState({ score: 100, feedback: '' });
+  const [availableRubrics, setAvailableRubrics] = useState<Rubric[]>([]);
+  const [selectedRubric, setSelectedRubric] = useState<Rubric | null>(null);
+
+  // State for form
+  const [evalForm, setEvalForm] = useState({
+    feedback: '',
+  });
+  const [criteriaScores, setCriteriaScores] = useState<Record<string, number>>(
+    {},
+  );
 
   const loadTasks = useCallback(async (_userId: string) => {
     try {
@@ -35,7 +58,7 @@ export default function Evaluations() {
       // Fetch tasks that are COMPLETED
       const response = await fetch('/api/tasks');
       const data = await response.json();
-      const allTasks = data.data || [];
+      const allTasks = data.data || data || []; // Handle both {data: []} and []
       const completedTasks = allTasks.filter(
         (t: Task) => t.status === 'COMPLETED',
       );
@@ -47,17 +70,51 @@ export default function Evaluations() {
     }
   }, []);
 
+  const loadRubrics = async (projectId: string) => {
+    try {
+      const response = await fetch(`/api/rubrics/${projectId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableRubrics(data.data || []);
+      }
+    } catch (error) {
+      console.error('Error loading rubrics:', error);
+    }
+  };
+
   useEffect(() => {
     if (user) {
-      // Only allow teachers/admins to see this page?
-      if (user.role !== 'ADMIN') {
-        // Redirect or show message is handled by UI hiding, but for safety:
-        // console.warn('Unauthorized access to evaluations');
-      }
-      // Based on requirements: "Docente... evaluar entregables"
+      // Only allow teachers/admins to see this page
       loadTasks(user.id);
     }
   }, [user, loadTasks]);
+
+  useEffect(() => {
+    if (selectedTask) {
+      loadRubrics(selectedTask.projectId);
+      setCriteriaScores({});
+      setEvalForm({ feedback: '' });
+      setSelectedRubric(null);
+    }
+  }, [selectedTask]);
+
+  // Auto-select first rubric if available
+  useEffect(() => {
+    if (availableRubrics.length > 0 && !selectedRubric) {
+      setSelectedRubric(availableRubrics[0]);
+    }
+  }, [availableRubrics, selectedRubric]);
+
+  // Initialize scores when rubric changes
+  useEffect(() => {
+    if (selectedRubric) {
+      const initialScores: Record<string, number> = {};
+      selectedRubric.criteria.forEach((c) => {
+        initialScores[c.id] = c.maxScore; // Default to max score
+      });
+      setCriteriaScores(initialScores);
+    }
+  }, [selectedRubric]);
 
   if (user?.role !== 'ADMIN') {
     return (
@@ -70,26 +127,52 @@ export default function Evaluations() {
     );
   }
 
+  const calculateTotalScore = () => {
+    if (!selectedRubric) return 100;
+
+    let totalWeight = 0;
+    let weightedSum = 0;
+
+    selectedRubric.criteria.forEach((c) => {
+      const score = criteriaScores[c.id] || 0;
+      weightedSum += (score / c.maxScore) * c.weight;
+      totalWeight += c.weight;
+    });
+
+    if (totalWeight === 0) return 0;
+    // Normalize to 0-100
+    return Math.round((weightedSum / totalWeight) * 100);
+  };
+
   const handleEvaluate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedTask || !user) return;
+    if (!selectedTask || !user || !selectedRubric) return;
 
     try {
-      // This endpoint needs to be created
+      const finalScore = calculateTotalScore();
+      const scoresPayload = Object.entries(criteriaScores).map(
+        ([id, score]) => ({
+          criteriaId: id,
+          score,
+        }),
+      );
+
       const response = await fetch(`/api/tasks/${selectedTask.id}/evaluate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          score: Number(evalForm.score),
+          score: finalScore,
           feedback: evalForm.feedback,
           evaluatorId: user.id,
+          criteriaScores: scoresPayload,
         }),
       });
 
       if (!response.ok) throw new Error('Error al evaluar');
 
       setSelectedTask(null);
-      setEvalForm({ score: 100, feedback: '' });
+      setEvalForm({ feedback: '' });
+      setCriteriaScores({});
       loadTasks(user.id);
       alert('Evaluación guardada correctamente');
     } catch (error) {
@@ -106,7 +189,7 @@ export default function Evaluations() {
     <div className="p-8 max-w-7xl mx-auto">
       <h1 className="text-3xl font-bold text-gray-900 mb-2">Evaluaciones</h1>
       <p className="text-gray-600 mb-8">
-        Califica las tareas completadas por los estudiantes.
+        Califica las tareas completadas por los estudiantes usando Rúbricas.
       </p>
 
       {isLoading ? (
@@ -176,35 +259,97 @@ export default function Evaluations() {
                   </p>
                 </div>
 
-                <div className="mb-4">
-                  <label
-                    htmlFor="eval-score"
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    Calificación (0-100)
-                  </label>
-                  <input
-                    id="eval-score"
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={evalForm.score}
-                    onChange={(e) =>
-                      setEvalForm({
-                        ...evalForm,
-                        score: Number(e.target.value),
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                  />
-                </div>
+                {/* Rubric Selection */}
+                {availableRubrics.length > 0 ? (
+                  <div className="mb-6">
+                    <label
+                      htmlFor="rubric-select"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Seleccionar Rúbrica
+                    </label>
+                    <select
+                      id="rubric-select"
+                      className="w-full border rounded px-3 py-2"
+                      value={selectedRubric?.id || ''}
+                      onChange={(e) => {
+                        const rubric = availableRubrics.find(
+                          (r) => r.id === e.target.value,
+                        );
+                        setSelectedRubric(rubric || null);
+                      }}
+                    >
+                      {availableRubrics.map((r) => (
+                        <option key={r.id} value={r.id}>
+                          {r.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div className="mb-6 p-4 bg-yellow-50 text-yellow-800 rounded text-sm">
+                    No hay rúbricas definidas para este proyecto.
+                    {/* In future: Add button to create one */}
+                  </div>
+                )}
+
+                {/* Criteria Inputs */}
+                {selectedRubric && (
+                  <div className="space-y-4 mb-6 border-t pt-4">
+                    <h3 className="font-semibold text-gray-700">Criterios</h3>
+                    {selectedRubric.criteria.map((criterion) => (
+                      <div
+                        key={criterion.id}
+                        className="flex items-center justify-between gap-4"
+                      >
+                        <div className="flex-1">
+                          <label
+                            htmlFor={`crit-${criterion.id}`}
+                            className="block text-sm font-medium text-gray-700"
+                          >
+                            {criterion.name}{' '}
+                            <span className="text-gray-400 text-xs">
+                              (Max: {criterion.maxScore}, Peso:{' '}
+                              {criterion.weight})
+                            </span>
+                          </label>
+                        </div>
+                        <input
+                          id={`crit-${criterion.id}`}
+                          type="number"
+                          min="0"
+                          max={criterion.maxScore}
+                          value={criteriaScores[criterion.id] || 0}
+                          onChange={(e) => {
+                            const val = Math.min(
+                              Number(e.target.value),
+                              criterion.maxScore,
+                            );
+                            setCriteriaScores((prev) => ({
+                              ...prev,
+                              [criterion.id]: val,
+                            }));
+                          }}
+                          className="w-20 border rounded px-2 py-1 text-right"
+                        />
+                      </div>
+                    ))}
+
+                    <div className="bg-gray-100 p-3 rounded flex justify-between items-center font-bold text-gray-800 mt-4">
+                      <span>Nota Final Calculada:</span>
+                      <span className="text-xl">
+                        {calculateTotalScore()} / 100
+                      </span>
+                    </div>
+                  </div>
+                )}
 
                 <div className="mb-6">
                   <label
                     htmlFor="eval-feedback"
                     className="block text-sm font-medium text-gray-700 mb-1"
                   >
-                    Feedback
+                    Feedback General
                   </label>
                   <textarea
                     id="eval-feedback"
@@ -214,7 +359,7 @@ export default function Evaluations() {
                       setEvalForm({ ...evalForm, feedback: e.target.value })
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    placeholder="Comentarios para el estudiante..."
+                    placeholder="Comentarios generales..."
                   />
                 </div>
 
@@ -228,7 +373,8 @@ export default function Evaluations() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    disabled={!selectedRubric && availableRubrics.length > 0}
+                    className={`flex-1 px-4 py-2 text-white rounded-lg ${!selectedRubric && availableRubrics.length > 0 ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}
                   >
                     Guardar Evaluación
                   </button>

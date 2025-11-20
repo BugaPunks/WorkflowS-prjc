@@ -7,6 +7,7 @@ import authRouter from './routes/auth';
 import chatRouter from './routes/chat';
 import documentsRouter from './routes/documents';
 import projectsRouter from './routes/projects';
+import rubricsRouter from './routes/rubrics';
 import sprintsRouter from './routes/sprints';
 import tasksRouter from './routes/tasks';
 import userStoriesRouter from './routes/user-stories';
@@ -28,6 +29,7 @@ app.use('/api/tasks', tasksRouter);
 app.use('/api/user-stories', userStoriesRouter);
 app.use('/api/chat', chatRouter);
 app.use('/api/documents', documentsRouter);
+app.use('/api/rubrics', rubricsRouter);
 
 // Health check
 app.get('/api/health', (_req, res) => {
