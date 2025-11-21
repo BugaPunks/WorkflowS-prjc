@@ -18,6 +18,7 @@ export default function Sidebar({ isOpen, user, onClose }: SidebarProps) {
 		{ label: "Historias", href: "/user-stories", icon: "📖" },
 		{ label: "Reportes", href: "/reports", icon: "📈" },
 		{ label: "Evaluaciones", href: "/evaluations", icon: "⭐" },
+		{ label: "Calendario", href: "/calendar", icon: "📅" },
 	];
 
 	const STUDENT_MENU = [
@@ -26,6 +27,7 @@ export default function Sidebar({ isOpen, user, onClose }: SidebarProps) {
 		{ label: "Tareas", href: "/tasks", icon: "✓" },
 		{ label: "Historias", href: "/user-stories", icon: "📖" },
 		{ label: "Reportes", href: "/reports", icon: "📈" },
+		{ label: "Calendario", href: "/calendar", icon: "📅" },
 	];
 
 	// Seleccionar menú según el rol del usuario

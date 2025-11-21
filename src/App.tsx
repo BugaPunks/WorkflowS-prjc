@@ -10,6 +10,7 @@ import { LoginSuccess } from "@/auth/LoginSuccess";
 import { RegisterForm } from "@/auth/RegisterForm";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { SessionProvider } from "@/hooks/useSession";
+import Calendar from "@/pages/Calendar";
 import Evaluations from "@/pages/Evaluations";
 import ProjectDetail from "@/pages/ProjectDetail";
 import Projects from "@/pages/Projects";
@@ -39,6 +40,7 @@ const App = () => {
 						<Route path="/user-stories" element={<UserStories />} />
 						<Route path="/reports" element={<Reports />} />
 						<Route path="/evaluations" element={<Evaluations />} />
+						<Route path="/calendar" element={<Calendar />} />
 					</Route>
 
 					{/* Redirección por defecto */}
