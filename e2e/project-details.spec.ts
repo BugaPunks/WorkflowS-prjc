@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import { loginAs } from "./utils/auth";
 
 test.describe("Project Details", () => {
 	// Use a unique suffix to avoid conflicts if tests run in parallel or repeatedly
@@ -8,18 +7,23 @@ test.describe("Project Details", () => {
 	const userEmail = `user${uniqueId}@test.com`;
 
 	test.beforeEach(async ({ page, request }) => {
-		page.on('console', msg => console.log('PAGE LOG:', msg.text()));
-		page.on('pageerror', exception => console.log(`PAGE ERROR: "${exception}"`));
+		page.on("console", (msg) => console.log("PAGE LOG:", msg.text()));
+		page.on("pageerror", (exception) =>
+			console.log(`PAGE ERROR: "${exception}"`),
+		);
 
 		// Register via API to avoid UI flakiness/timeouts
-		const registerRes = await request.post('http://localhost:5000/api/auth/register', {
-			data: {
-				name: "Test User",
-				email: userEmail,
-				password: "password123",
-				role: "ADMIN"
-			}
-		});
+		const registerRes = await request.post(
+			"http://localhost:5000/api/auth/register",
+			{
+				data: {
+					name: "Test User",
+					email: userEmail,
+					password: "password123",
+					role: "ADMIN",
+				},
+			},
+		);
 
 		// If 400, it might be "User already exists", which is fine for this test run context usually
 		let userId = "";
@@ -33,9 +37,12 @@ test.describe("Project Details", () => {
 			// Ideally we fetch the user id if exists, but for now we might fail if we need ID.
 			// However, local storage mock needs ID.
 			// Let's assume registration success or we login via API to get ID.
-			const loginRes = await request.post('http://localhost:5000/api/auth/login', {
-				data: { email: userEmail, password: "password123" }
-			});
+			const loginRes = await request.post(
+				"http://localhost:5000/api/auth/login",
+				{
+					data: { email: userEmail, password: "password123" },
+				},
+			);
 			const loginData = await loginRes.json();
 			userId = loginData.user.id;
 			userName = loginData.user.name;
@@ -47,9 +54,12 @@ test.describe("Project Details", () => {
 
 		// Bypass UI Login
 		await page.goto("/");
-		await page.evaluate(({ id, name, email, role }) => {
-			localStorage.setItem("user", JSON.stringify({ id, name, email, role }));
-		}, { id: userId, name: userName, email: userEmail, role: "ADMIN" });
+		await page.evaluate(
+			({ id, name, email, role }) => {
+				localStorage.setItem("user", JSON.stringify({ id, name, email, role }));
+			},
+			{ id: userId, name: userName, email: userEmail, role: "ADMIN" },
+		);
 
 		// Reload to pick up session
 		await page.reload();
@@ -129,7 +139,9 @@ test.describe("Project Details", () => {
 
 		// Click Docs Tab
 		await page.getByRole("button", { name: "Documentos" }).click();
-		await expect(page.getByRole("heading", { name: "Documentos" })).toBeVisible();
+		await expect(
+			page.getByRole("heading", { name: "Documentos" }),
+		).toBeVisible();
 		await expect(
 			page.getByRole("button", { name: "Subir Archivo" }),
 		).toBeVisible();

@@ -14,6 +14,7 @@ import Evaluations from "@/pages/Evaluations";
 import ProjectDetail from "@/pages/ProjectDetail";
 import Projects from "@/pages/Projects";
 import Reports from "@/pages/Reports";
+import SprintDetail from "@/pages/SprintDetail";
 import Sprints from "@/pages/Sprints";
 import Tasks from "@/pages/Tasks";
 import UserStories from "@/pages/UserStories";
@@ -33,6 +34,7 @@ const App = () => {
 						<Route path="/projects" element={<Projects />} />
 						<Route path="/projects/:id" element={<ProjectDetail />} />
 						<Route path="/sprints" element={<Sprints />} />
+						<Route path="/sprints/:id" element={<SprintDetail />} />
 						<Route path="/tasks" element={<Tasks />} />
 						<Route path="/user-stories" element={<UserStories />} />
 						<Route path="/reports" element={<Reports />} />

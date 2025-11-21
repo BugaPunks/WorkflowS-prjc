@@ -76,7 +76,7 @@ router.get("/:id", async (req, res) => {
 // POST crear proyecto
 router.post("/", async (req, res) => {
 	try {
-		const { name, description, ownerId } = req.body;
+		const { name, description, ownerId, startDate, endDate } = req.body;
 
 		if (!name || !ownerId) {
 			return res.status(400).json({ error: "Faltan campos requeridos" });
@@ -87,6 +87,8 @@ router.post("/", async (req, res) => {
 				name,
 				description,
 				ownerId,
+				startDate: startDate ? new Date(startDate) : undefined,
+				endDate: endDate ? new Date(endDate) : undefined,
 			},
 		});
 		res.status(201).json({ data: project });
@@ -102,9 +104,14 @@ router.post("/", async (req, res) => {
 // PUT actualizar proyecto
 router.put("/:id", async (req, res) => {
 	try {
+		const { startDate, endDate, ...rest } = req.body;
 		const project = await prisma.project.update({
 			where: { id: req.params.id },
-			data: req.body,
+			data: {
+				...rest,
+				startDate: startDate ? new Date(startDate) : undefined,
+				endDate: endDate ? new Date(endDate) : undefined,
+			},
 		});
 		res.json({ data: project });
 	} catch (error) {

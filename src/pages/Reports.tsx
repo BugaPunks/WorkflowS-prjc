@@ -111,9 +111,19 @@ export default function Reports() {
 			</h1>
 
 			<div className="bg-white p-6 rounded-lg shadow-md mb-8">
-				<h2 className="text-xl font-semibold text-gray-800 mb-4 border-b pb-2">
-					Configuración
-				</h2>
+				<div className="flex justify-between items-center mb-4 border-b pb-2">
+					<h2 className="text-xl font-semibold text-gray-800">Configuración</h2>
+					{selectedProject && (
+						<a
+							href={`/api/metrics/export/projects/${selectedProject}`}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm font-medium flex items-center gap-2"
+						>
+							📥 Exportar Datos
+						</a>
+					)}
+				</div>
 				<div className="flex gap-4 mb-6">
 					<div>
 						<label

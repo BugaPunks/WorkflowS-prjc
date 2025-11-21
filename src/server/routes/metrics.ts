@@ -138,4 +138,53 @@ router.get("/projects/:projectId/contribution", async (req, res) => {
 	}
 });
 
+// GET Export Project Data (CSV)
+router.get("/export/projects/:projectId", async (req, res) => {
+	try {
+		const { projectId } = req.params;
+
+		const project = await prisma.project.findUnique({
+			where: { id: projectId },
+			include: {
+				sprints: {
+					include: {
+						tasks: {
+							include: {
+								assignee: true,
+							},
+						},
+					},
+				},
+			},
+		});
+
+		if (!project) {
+			return res.status(404).json({ error: "Project not found" });
+		}
+
+		// Generate CSV content
+		const rows = ["Sprint,Tarea,Asignado,Estado,Prioridad,Puntos"];
+
+		project.sprints.forEach((sprint) => {
+			sprint.tasks.forEach((task) => {
+				rows.push(
+					`${sprint.name},"${task.title}",${task.assignee?.name || "Sin asignar"},${task.status},${task.priority},N/A`,
+				);
+			});
+		});
+
+		const csvContent = rows.join("\n");
+
+		res.setHeader("Content-Type", "text/csv");
+		res.setHeader(
+			"Content-Disposition",
+			`attachment; filename="project-${projectId}-report.csv"`,
+		);
+		res.send(csvContent);
+	} catch (error) {
+		console.error("Error exporting data:", error);
+		res.status(500).json({ error: "Error exporting data" });
+	}
+});
+
 export default router;

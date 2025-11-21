@@ -8,6 +8,8 @@ interface Project {
 	name: string;
 	description: string;
 	status: string;
+	startDate?: string;
+	endDate?: string;
 	createdAt: string;
 }
 
@@ -18,7 +20,12 @@ export default function Projects() {
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [showModal, setShowModal] = useState(false);
-	const [formData, setFormData] = useState({ name: "", description: "" });
+	const [formData, setFormData] = useState({
+		name: "",
+		description: "",
+		startDate: "",
+		endDate: "",
+	});
 
 	const loadProjects = useCallback(async (userId?: string) => {
 		try {
@@ -52,11 +59,18 @@ export default function Projects() {
 				name: formData.name,
 				description: formData.description,
 				ownerId: user.id, // Añadir el ID del usuario actual como ownerId
+				startDate: formData.startDate,
+				endDate: formData.endDate,
 			};
 
 			// Usar el cliente API para manejar correctamente la respuesta y errores
 			await projectAPI.create(projectData);
-			setFormData({ name: "", description: "" });
+			setFormData({
+				name: "",
+				description: "",
+				startDate: "",
+				endDate: "",
+			});
 			setShowModal(false);
 			if (user) await loadProjects(user.id);
 		} catch (err) {
@@ -133,6 +147,12 @@ export default function Projects() {
 									<p className="text-sm text-gray-500">
 										{new Date(project.createdAt).toLocaleDateString()}
 									</p>
+									{project.startDate && project.endDate && (
+										<p className="text-xs text-gray-400 mt-1">
+											{new Date(project.startDate).toLocaleDateString()} -{" "}
+											{new Date(project.endDate).toLocaleDateString()}
+										</p>
+									)}
 								</div>
 								<span className="inline-block px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
 									{project.status || "ACTIVO"}
@@ -232,6 +252,42 @@ export default function Projects() {
 									placeholder="Descripción del proyecto"
 									rows={4}
 								/>
+							</div>
+							<div className="grid grid-cols-2 gap-4 mb-6">
+								<div>
+									<label
+										htmlFor="start-date"
+										className="block text-sm font-medium text-gray-700 mb-2"
+									>
+										Fecha Inicio
+									</label>
+									<input
+										id="start-date"
+										type="date"
+										value={formData.startDate}
+										onChange={(e) =>
+											setFormData({ ...formData, startDate: e.target.value })
+										}
+										className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+									/>
+								</div>
+								<div>
+									<label
+										htmlFor="end-date"
+										className="block text-sm font-medium text-gray-700 mb-2"
+									>
+										Fecha Fin
+									</label>
+									<input
+										id="end-date"
+										type="date"
+										value={formData.endDate}
+										onChange={(e) =>
+											setFormData({ ...formData, endDate: e.target.value })
+										}
+										className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+									/>
+								</div>
 							</div>
 							<div className="flex gap-3">
 								<button
