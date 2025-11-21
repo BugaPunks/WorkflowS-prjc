@@ -402,7 +402,8 @@ function MembersSection({
 			const data = await response.json();
 			// Filter out already added members
 			const memberIds = new Set(members.map((m) => m.userId));
-			const availableUsers = (data.data || []).filter(
+			const userList = Array.isArray(data) ? data : data.data || [];
+			const availableUsers = userList.filter(
 				(u: AvailableUser) => !memberIds.has(u.id),
 			);
 			setUsers(availableUsers);
@@ -652,7 +653,10 @@ export default function ProjectDetail() {
 			// Fetch sprints
 			const sprintsResponse = await fetch("/api/sprints");
 			const sprintsData = await sprintsResponse.json();
-			const projectSprints: Sprint[] = (sprintsData.data as Sprint[]).filter(
+			const sprintsList = Array.isArray(sprintsData)
+				? sprintsData
+				: sprintsData.data || [];
+			const projectSprints: Sprint[] = (sprintsList as Sprint[]).filter(
 				(s) => s.projectId === id,
 			);
 			setSprints(projectSprints || []);
@@ -660,7 +664,10 @@ export default function ProjectDetail() {
 			// Fetch ALL User Stories for this project
 			const storiesResponse = await fetch("/api/user-stories");
 			const storiesData = await storiesResponse.json();
-			const projectStories: UserStory[] = (storiesData.data || []).filter(
+			const storiesList = Array.isArray(storiesData)
+				? storiesData
+				: storiesData.data || [];
+			const projectStories: UserStory[] = (storiesList as UserStory[]).filter(
 				(s: UserStory) => s.projectId === id,
 			);
 
@@ -694,7 +701,11 @@ export default function ProjectDetail() {
 		if (user && project) {
 			const isOwner = project.ownerId === user.id;
 			const member = project.members.find((m) => m.userId === user.id);
-			const isLead = member?.role === "OWNER" || member?.role === "LEAD";
+			const isLead =
+				member?.role === "OWNER" ||
+				member?.role === "LEAD" ||
+				member?.role === "SCRUM_MASTER" ||
+				member?.role === "PRODUCT_OWNER";
 			setIsProjectAdmin(isOwner || isLead || user.role === "ADMIN");
 		}
 	}, [user, project]);

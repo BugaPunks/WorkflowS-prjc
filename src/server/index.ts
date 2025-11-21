@@ -47,7 +47,9 @@ app.use((_req, res) => {
 
 // Iniciar servidor
 const server = app.listen(PORT, () => {
-	console.log(`🚀 API Server corriendo en http://localhost:${PORT}`);
+	console.log(
+		`🚀 API Server corriendo en http://localhost:${PORT} (VERSION 2)`,
+	);
 	console.log("📚 Rutas disponibles:");
 	console.log("   POST   /api/auth/register");
 	console.log("   POST   /api/auth/login");

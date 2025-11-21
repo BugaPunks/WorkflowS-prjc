@@ -16,7 +16,7 @@ router.get("/", async (_req, res) => {
 				createdAt: true,
 			},
 		});
-		res.json(users);
+		res.json({ data: users });
 	} catch {
 		res.status(500).json({ error: "Error al obtener usuarios" });
 	}
