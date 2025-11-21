@@ -15,7 +15,7 @@ router.get("/", async (req, res) => {
 			take: 20, // Limit to last 20
 		});
 		res.json({ data: notifications });
-	} catch (error) {
+	} catch (_error) {
 		res.status(500).json({ error: "Error al obtener notificaciones" });
 	}
 });
@@ -29,7 +29,7 @@ router.put("/:id/read", async (req, res) => {
 			data: { read: true },
 		});
 		res.json({ message: "Marcada como leída" });
-	} catch (error) {
+	} catch (_error) {
 		res.status(500).json({ error: "Error al actualizar notificación" });
 	}
 });

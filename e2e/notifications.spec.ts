@@ -4,7 +4,7 @@ import { loginAs } from "./utils/auth";
 test.describe("Notification System", () => {
 	test("Should receive notification when assigned a task", async ({
 		page,
-		request,
+		// request,
 	}) => {
 		// 1. Setup: Create Admin and Student (if not exists)
 		// We'll assume admin exists. We need a student to assign task to.

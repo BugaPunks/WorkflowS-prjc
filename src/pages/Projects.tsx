@@ -203,6 +203,7 @@ export default function Projects() {
 								</label>
 								<input
 									id="project-name"
+									name="name"
 									type="text"
 									value={formData.name}
 									onChange={(e) =>
@@ -222,6 +223,7 @@ export default function Projects() {
 								</label>
 								<textarea
 									id="project-desc"
+									name="description"
 									value={formData.description}
 									onChange={(e) =>
 										setFormData({ ...formData, description: e.target.value })

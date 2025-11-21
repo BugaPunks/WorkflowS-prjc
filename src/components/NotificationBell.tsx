@@ -90,10 +90,9 @@ export function NotificationBell() {
 							</div>
 						) : (
 							notifications.map((notification) => (
-								<div
+								<button
 									key={notification.id}
-									role="button"
-									tabIndex={0}
+									type="button"
 									onClick={() =>
 										!notification.read && handleMarkRead(notification.id)
 									}
@@ -117,7 +116,7 @@ export function NotificationBell() {
 									<p className="text-sm text-gray-600">
 										{notification.message}
 									</p>
-								</div>
+								</button>
 							))
 						)}
 					</div>

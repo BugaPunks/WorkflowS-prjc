@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { loginAs } from "./utils/auth";
 
 test.describe("Evaluations & Rubrics", () => {
-	test("Should allow evaluation with a Rubric", async ({ page, request }) => {
+	test("Should allow evaluation with a Rubric", async ({ page }) => {
 		// 1. Setup: Create a Project, Rubric, and Task via API (to save time/robustness)
 		//    We need an admin user. Assuming "admin@workflow.com" / "admin123" exists from seed.
 
@@ -15,7 +15,7 @@ test.describe("Evaluations & Rubrics", () => {
 
 		// Create a Rubric via API (since we didn't build a Rubric UI yet, only Evaluation UI)
 		// We need a project ID. Let's grab the first one from the UI or API.
-		const projectsRes = await page.request.get(
+		const _projectsRes = await page.request.get(
 			"http://localhost:3001/api/projects?memberId=admin-id-placeholder",
 		);
 		// Actually simpler to just assume the seeded project exists or fetch via UI interception.

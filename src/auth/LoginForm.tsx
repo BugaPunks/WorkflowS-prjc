@@ -62,7 +62,8 @@ export function LoginForm() {
 		setIsSubmitting(true);
 
 		try {
-			const response = await fetch("http://localhost:5000/api/auth/login", {
+			// Using /api prefix to use proxy
+			const response = await fetch("/api/auth/login", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",

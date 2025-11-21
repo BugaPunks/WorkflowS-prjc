@@ -39,7 +39,7 @@ router.get("/:projectId", async (req, res) => {
 			};
 		});
 
-    res.json(result);
+		res.json(result);
 	} catch (_error) {
 		res.status(500).json({ error: "Error al obtener documentos" });
 	}
@@ -68,7 +68,16 @@ router.post("/:projectId", async (req, res) => {
 			},
 		});
 
-		let document: any;
+		let document: {
+			id: string;
+			name: string;
+			type: string;
+			size: number;
+			uploadedAt: Date;
+			projectId: string;
+			url: string;
+			version: number;
+		};
 
 		if (existingDoc) {
 			// Create a new version
@@ -104,7 +113,7 @@ router.post("/:projectId", async (req, res) => {
 			});
 		}
 
-    res.status(201).json(document);
+		res.status(201).json(document);
 	} catch (_error) {
 		console.error(_error);
 		res.status(500).json({ error: "Error al subir documento" });
@@ -131,8 +140,8 @@ router.get("/:id/versions", async (req, res) => {
 			orderBy: { version: "desc" },
 		});
 
-    res.json(history);
-	} catch (error) {
+		res.json(history);
+	} catch (_error) {
 		res.status(500).json({ error: "Error al obtener versiones" });
 	}
 });

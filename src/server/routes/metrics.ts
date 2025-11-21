@@ -41,7 +41,7 @@ router.get("/sprints/:sprintId/burndown", async (req, res) => {
 
 		// Generate daily data
 		const series = [];
-		const remainingPoints = totalPoints;
+		const _remainingPoints = totalPoints;
 
 		// Map completions by day
 		// A story is "done" when its status is DONE? Or when all tasks are DONE?
@@ -110,7 +110,10 @@ router.get("/projects/:projectId/contribution", async (req, res) => {
 		});
 
 		// Group by user
-		const contributionMap = new Map<string, { user: any; count: number }>();
+		const contributionMap = new Map<
+			string,
+			{ user: { id: string; name: string }; count: number }
+		>();
 
 		tasks.forEach((task) => {
 			if (!task.assignee) return; // Unassigned tasks don't count

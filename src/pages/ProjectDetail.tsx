@@ -659,8 +659,10 @@ export default function ProjectDetail() {
 
 			// Fetch ALL User Stories for this project
 			const storiesResponse = await fetch("/api/user-stories");
-			const storiesData: UserStory[] = await storiesResponse.json();
-			const projectStories = storiesData.filter((s) => s.projectId === id);
+			const storiesData = await storiesResponse.json();
+			const projectStories: UserStory[] = (storiesData.data || []).filter(
+				(s: UserStory) => s.projectId === id,
+			);
 
 			// Filter stories that are NOT in any sprint (not in backlogItems of any sprint)
 			const assignedStoryIds = new Set();
