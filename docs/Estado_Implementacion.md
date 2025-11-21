@@ -47,6 +47,11 @@ La mayoría de los requisitos funcionales (RF) y no funcionales han sido complet
 - **RF10.1 (Documentos):** Carga y descarga de archivos implementada.
 - **RF10.2 (Versionado):** El sistema detecta nombres duplicados y crea nuevas versiones automáticamente.
 
+### Módulo 9: Utilidades
+- **Calendario de Eventos (Iteración 4):** Implementado. Vista de calendario mensual que visualiza:
+    - Duración de Sprints (inicio a fin).
+    - Fechas de entrega (Deadlines) de tareas.
+
 ### Extras Implementados
 - **Exportación de Datos:** Funcionalidad para exportar reportes y datos de proyectos (Iteración 5 parcial).
 - **Tests E2E:** Cobertura robusta con Playwright para los flujos principales.
@@ -61,11 +66,7 @@ Los siguientes elementos, mencionados en las instrucciones o como ideas adiciona
 - **Estado:** Parcial.
 - **Detalle:** Se implementó la **exportación** de datos, pero la **importación** masiva (ej. cargar usuarios desde CSV) no está disponible.
 
-### 2. Calendario de Eventos (Iteración 4)
-- **Estado:** Pendiente.
-- **Detalle:** No existe una vista de "Calendario" dedicada para visualizar gráficamente las fechas de todos los sprints y entregas en un solo lugar, aunque las fechas se gestionan internamente.
-
-### 3. Ideas Adicionales (Opcionales)
+### 2. Ideas Adicionales (Opcionales)
 - **Gamificación:** No se implementaron insignias o sistemas de recompensas.
 - **Peer Review:** La evaluación es realizada principalmente por el docente/admin, no hay un flujo explícito automatizado para evaluación entre estudiantes.
 
@@ -75,5 +76,4 @@ Los siguientes elementos, mencionados en las instrucciones o como ideas adiciona
 
 - **Build:** El proyecto compila correctamente (`npm run build`).
 - **Calidad de Código:** Validado con Biome (`npm run check`).
-- **Testing:** Tests de integración (E2E) cubren los módulos críticos (Auth, Proyectos, Sprints, Kanban, Documentos*, Rúbricas, Métricas).
-    - *Nota: El test de versionado de documentos es funcional manualmente pero se ha omitido en CI por inestabilidad en el entorno de pruebas.*
+- **Testing:** Tests de integración (E2E) cubren los módulos críticos (Auth, Proyectos, Sprints, Kanban, Documentos, Rúbricas, Métricas, Calendario).
