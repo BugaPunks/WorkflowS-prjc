@@ -357,5 +357,68 @@ test.describe("Full Project Lifecycle: Teacher and Student", () => {
 		await expect(
 			page.getByRole("heading", { name: "Evaluar Tarea" }),
 		).not.toBeVisible();
+
+        // =================================================================
+        // 4. STUDENT: Retrospective & Velocity Check
+        // =================================================================
+        console.log("--- Step 4: Student Retrospective & Review ---");
+
+        // Switch back to student
+		await page.evaluate(() => localStorage.clear());
+		await page.evaluate(
+			(data) => {
+				localStorage.setItem(
+					"user",
+					JSON.stringify({
+						id: data.id,
+						name: "Estudiante Test",
+						email: data.email,
+						role: "TEAM_DEVELOPER", // Global role is dev
+					}),
+				);
+			},
+			{ id: studentId, email: studentEmail },
+		);
+		await page.reload();
+
+        // 4.1 Add Retrospective Item
+        await page.goto(`/projects/${projectId}`);
+        await page.getByRole("button", { name: "Retrospectiva" }).click();
+
+        // Should see retrospective board columns
+        await expect(page.getByText("Lo que hicimos bien")).toBeVisible();
+
+        // Add "Good" note
+        await page.getByRole("button", { name: "+ Añadir Nota" }).first().click();
+        await page.fill("textarea", "Buen trabajo en equipo");
+        await page.getByRole("button", { name: "Añadir", exact: true }).click();
+
+        // Verify note appears
+        await expect(page.getByText("Buen trabajo en equipo")).toBeVisible();
+
+        // 4.2 Check Velocity Chart
+        await page.goto("/reports");
+
+        // Select Project (Wait for load)
+        // The select might be populated async.
+        await expect(page.getByLabel("Proyecto")).toBeVisible();
+        // If only one project, it might be auto-selected or we select it.
+        // We can select by value or label.
+        // Let's wait for the option.
+        await expect(page.locator(`option:has-text("${projectName}")`)).toBeAttached();
+        await page.selectOption("#project-select", { label: projectName });
+
+        // Verify Velocity Chart section exists
+        await expect(page.getByText("Velocidad del Equipo (Velocity)")).toBeVisible();
+
+        // Verify chart renders (check for SVG or bars)
+        // Since we completed a task (marked as completed), velocity should have data IF the sprint is finished?
+        // Or current velocity?
+        // Velocity usually shows closed sprints. Our sprint is ACTIVE.
+        // The metric logic `filter((item) => item.status === "DONE" || item.status === "COMPLETED")`.
+        // It calculates `completed` points.
+        // So even if sprint is active, it shows data for that sprint name.
+        // We should see the sprint name on X-axis.
+        await expect(page.locator(".recharts-responsive-container")).toBeVisible();
 	});
 });
