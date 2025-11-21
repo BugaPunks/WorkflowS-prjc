@@ -7,6 +7,7 @@ import authRouter from "./routes/auth";
 import chatRouter from "./routes/chat";
 import documentsRouter from "./routes/documents";
 import metricsRouter from "./routes/metrics";
+import notificationsRouter from "./routes/notifications";
 import projectsRouter from "./routes/projects";
 import rubricsRouter from "./routes/rubrics";
 import sprintsRouter from "./routes/sprints";
@@ -32,6 +33,7 @@ app.use("/api/chat", chatRouter);
 app.use("/api/documents", documentsRouter);
 app.use("/api/rubrics", rubricsRouter);
 app.use("/api/metrics", metricsRouter);
+app.use("/api/notifications", notificationsRouter);
 
 // Health check
 app.get("/api/health", (_req, res) => {

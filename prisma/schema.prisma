@@ -36,6 +36,7 @@ model User {
   conversationParticipants ConversationParticipant[]
   messages           Message[]
   projectMemberships ProjectMember[]
+  notifications      Notification[]
 
   @@index([email])
   @@map("users")
@@ -335,4 +336,20 @@ model Message {
 
   @@index([conversationId])
   @@map("messages")
+}
+
+// Notificaciones
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   // TASK_ASSIGNED, EVALUATION_COMPLETED, MESSAGE
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("notifications")
 }

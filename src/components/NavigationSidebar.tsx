@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { NotificationBell } from "./NotificationBell";
 
 interface SidebarProps {
 	isOpen: boolean;
@@ -71,6 +72,9 @@ export default function Sidebar({ isOpen, user, onClose }: SidebarProps) {
 				{/* User Info & Logout */}
 				{isOpen && (
 					<div className="border-t border-gray-700 p-4">
+						<div className="mb-4 flex justify-end">
+							<NotificationBell />
+						</div>
 						<div className="flex items-center gap-3 mb-3">
 							<div className="w-10 h-10 bg-linear-to-br from-blue-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
 								{user?.name?.charAt(0).toUpperCase()}

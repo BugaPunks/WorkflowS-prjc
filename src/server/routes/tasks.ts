@@ -76,6 +76,19 @@ router.post("/", async (req, res) => {
 				status: status || "TODO",
 			},
 		});
+
+		// Crear notificación si hay asignado
+		if (assigneeId) {
+			await prisma.notification.create({
+				data: {
+					userId: assigneeId,
+					title: "Nueva Tarea Asignada",
+					message: `Se te ha asignado la tarea: ${title}`,
+					type: "TASK_ASSIGNED",
+				},
+			});
+		}
+
 		res.status(201).json(task);
 	} catch {
 		res.status(500).json({ error: "Error al crear tarea" });
@@ -153,6 +166,18 @@ router.post("/:id/evaluate", async (req, res) => {
 
 			return newEvaluation;
 		});
+
+		// Notificar al asignado de la tarea
+		if (task.assigneeId) {
+			await prisma.notification.create({
+				data: {
+					userId: task.assigneeId,
+					title: "Tarea Evaluada",
+					message: `Tu tarea "${task.title}" ha sido evaluada con ${score}/100`,
+					type: "EVALUATION_COMPLETED",
+				},
+			});
+		}
 
 		res.status(201).json({ data: evaluation });
 	} catch (error) {
