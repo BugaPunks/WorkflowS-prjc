@@ -26,10 +26,12 @@ test.describe("Evaluations & Rubrics", () => {
 			.first()
 			.getByRole("button", { name: "Ver" })
 			.click();
+
+		await page.waitForURL(/\/projects\/[a-zA-Z0-9]+/);
 		const projectId = page.url().split("/projects/")[1];
 
 		// 3. Create Rubric via API
-		const _rubricRes = await request.post("http://localhost:5000/api/rubrics", {
+		const rubricRes = await request.post("http://localhost:5000/api/rubrics", {
 			data: {
 				projectId: projectId,
 				name: `Rubrica Test ${timestamp}`,
@@ -40,11 +42,11 @@ test.describe("Evaluations & Rubrics", () => {
 				],
 			},
 		});
-		// expect(rubricRes.ok()).toBeTruthy();
+		expect(rubricRes.ok()).toBeTruthy();
 
 		// 4. Create Task via API (COMPLETED)
 		const taskTitle = `Tarea Evaluable ${timestamp}`;
-		const _taskRes = await request.post("http://localhost:5000/api/tasks", {
+		const taskRes = await request.post("http://localhost:5000/api/tasks", {
 			data: {
 				title: taskTitle,
 				description: "Tarea para probar evaluación",
@@ -52,7 +54,7 @@ test.describe("Evaluations & Rubrics", () => {
 				status: "COMPLETED",
 			},
 		});
-		// expect(taskRes.ok()).toBeTruthy();
+		expect(taskRes.ok()).toBeTruthy();
 
 		// Note: If tasks need to be assigned to a student to be evaluable, we might need that.
 		// But admins can maybe evaluate anyone.
@@ -63,13 +65,13 @@ test.describe("Evaluations & Rubrics", () => {
 		// 6. Select the Task
 		// It might take a moment to appear
 		await expect(page.getByText(taskTitle)).toBeVisible();
+
 		// Click the "Evaluar" button for this specific task
-		// Simplify selector to just find the button near the text
+		// Use a more specific selector to avoid matching the parent container
 		await page
-			.locator("div") // Generic container
+			.locator("div.rounded-lg.border") // Task card class
 			.filter({ hasText: taskTitle })
 			.getByRole("button", { name: "Evaluar" })
-			.first()
 			.click();
 
 		// 7. Verify Rubric Form appears
@@ -90,8 +92,14 @@ test.describe("Evaluations & Rubrics", () => {
 		await expect(page.getByText("Seleccionar Rúbrica")).toBeVisible();
 
 		// 8. Fill Criteria
-		await page.fill('input[max="10"]', "8");
-		await page.fill('input[max="5"]', "5");
+		// Wait for rubric to be selected and criteria to appear
+		await expect(page.getByText("Criterios")).toBeVisible();
+
+		// Use getByRole for inputs associated with labels
+		await page
+			.getByRole("spinbutton", { name: /Calidad de Código/i })
+			.fill("8");
+		await page.getByRole("spinbutton", { name: /Documentación/i }).fill("5");
 
 		// Check calculation
 		// (8/10)*2 = 1.6. (5/5)*1 = 1. Total = 2.6. Max Weight = 3.
@@ -103,10 +111,12 @@ test.describe("Evaluations & Rubrics", () => {
 		await page.getByRole("button", { name: "Guardar Evaluación" }).click();
 
 		// 10. Verify Success
+		// Check if the "Evaluada" badge appears in the task card
 		await expect(
-			page.locator(`text=${taskTitle}`), // Find task row/card
-			// .locator("..") // parent
-			// .getByText("Evaluada")
+			page
+				.locator("div.rounded-lg.border")
+				.filter({ hasText: taskTitle })
+				.getByText("Evaluada"),
 		).toBeVisible();
 	});
 });
