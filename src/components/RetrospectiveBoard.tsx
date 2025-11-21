@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSession } from "@/hooks/useSession";
 
 interface RetrospectiveItem {
@@ -46,11 +46,7 @@ export default function RetrospectiveBoard({ sprintId }: Props) {
 	const [newItemContent, setNewItemContent] = useState("");
 	const [activeColumn, setActiveColumn] = useState<string | null>(null);
 
-	useEffect(() => {
-		loadItems();
-	}, [sprintId]);
-
-	const loadItems = async () => {
+	const loadItems = useCallback(async () => {
 		try {
 			const res = await fetch(`/api/retrospectives/${sprintId}`);
 			const data = await res.json();
@@ -58,7 +54,11 @@ export default function RetrospectiveBoard({ sprintId }: Props) {
 		} catch (err) {
 			console.error(err);
 		}
-	};
+	}, [sprintId]);
+
+	useEffect(() => {
+		loadItems();
+	}, [loadItems]);
 
 	const handleAddItem = async (type: string) => {
 		if (!newItemContent.trim() || !user) return;
@@ -67,7 +67,7 @@ export default function RetrospectiveBoard({ sprintId }: Props) {
 		const tempId = Date.now().toString();
 		const newItem: RetrospectiveItem = {
 			id: tempId,
-			type: type as any,
+			type: type as RetrospectiveItem["type"],
 			content: newItemContent,
 			user: { id: user.id, name: user.name, avatar: user.avatar || null },
 		};
@@ -146,6 +146,7 @@ export default function RetrospectiveBoard({ sprintId }: Props) {
 											</span>
 											{user?.id === item.user.id && (
 												<button
+													type="button"
 													onClick={() => handleDelete(item.id)}
 													className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
 												>
@@ -160,7 +161,6 @@ export default function RetrospectiveBoard({ sprintId }: Props) {
 							{activeColumn === col.id ? (
 								<div className="mt-4 animate-in fade-in slide-in-from-bottom-2">
 									<textarea
-										autoFocus
 										className="w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-blue-400 outline-none shadow-inner bg-yellow-50"
 										placeholder="Escribe tu nota..."
 										rows={3}
@@ -175,12 +175,14 @@ export default function RetrospectiveBoard({ sprintId }: Props) {
 									/>
 									<div className="flex gap-2 mt-2">
 										<button
+											type="button"
 											onClick={() => handleAddItem(col.id)}
 											className="bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 shadow-sm"
 										>
 											Añadir
 										</button>
 										<button
+											type="button"
 											onClick={() => {
 												setActiveColumn(null);
 												setNewItemContent("");
@@ -193,6 +195,7 @@ export default function RetrospectiveBoard({ sprintId }: Props) {
 								</div>
 							) : (
 								<button
+									type="button"
 									onClick={() => setActiveColumn(col.id)}
 									className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-400 hover:border-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors text-sm font-medium mt-2 flex items-center justify-center gap-2"
 								>

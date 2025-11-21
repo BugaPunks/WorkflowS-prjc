@@ -187,7 +187,7 @@ test.describe("Full Project Lifecycle: Teacher and Student", () => {
 			? storiesData2
 			: storiesData2.data || [];
 		const storyObj = storyList.find(
-			(s: any) =>
+			(s: { title: string; projectId: string }) =>
 				s.title === "Historia de Usuario E2E" && s.projectId === projectId,
 		);
 
@@ -197,7 +197,8 @@ test.describe("Full Project Lifecycle: Teacher and Student", () => {
 			? sprintsData2
 			: sprintsData2.data || [];
 		const sprintObj = sprintList.find(
-			(s: any) => s.name === sprintName && s.projectId === projectId,
+			(s: { name: string; projectId: string }) =>
+				s.name === sprintName && s.projectId === projectId,
 		);
 
 		if (storyObj && sprintObj) {
@@ -230,7 +231,7 @@ test.describe("Full Project Lifecycle: Teacher and Student", () => {
 		);
 		const storiesData = await storiesRes.json();
 		const story = storiesData.data.find(
-			(s: any) => s.title === "Historia de Usuario E2E",
+			(s: { title: string }) => s.title === "Historia de Usuario E2E",
 		);
 
 		const taskTitle = `Tarea Entregable ${timestamp}`;
@@ -249,7 +250,9 @@ test.describe("Full Project Lifecycle: Teacher and Student", () => {
 		// Need sprint ID first.
 		const sprintsRes = await request.get("http://localhost:5000/api/sprints");
 		const sprintsData = await sprintsRes.json();
-		const sprint = sprintsData.data.find((s: any) => s.name === sprintName);
+		const sprint = sprintsData.data.find(
+			(s: { name: string }) => s.name === sprintName,
+		);
 
 		if (sprint) {
 			await page.goto(`/sprints/${sprint.id}`);
@@ -259,7 +262,7 @@ test.describe("Full Project Lifecycle: Teacher and Student", () => {
 			// Actually, `ProjectDetail` drag and drop links Story to Sprint.
 			// Does Task inherit Sprint? Schema has `sprintId`.
 			// Let's update the task to include sprintId.
-			const tasksRes = await request.get("http://localhost:5000/api/tasks"); // Might need filter
+			const _tasksRes = await request.get("http://localhost:5000/api/tasks"); // Might need filter
 			// Better: just create it with sprintId
 			// I'll assume for this test that the teacher grades the task regardless of view,
 			// but let's link it to sprint for correctness.

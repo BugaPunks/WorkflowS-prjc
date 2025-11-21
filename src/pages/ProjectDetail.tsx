@@ -911,7 +911,7 @@ export default function ProjectDetail() {
 								<select
 									id="retro-sprint-select"
 									className="border rounded px-3 py-1"
-									onChange={(e) => {
+									onChange={(_e) => {
 										// We could add state for selected sprint, but for now maybe just show the first active/latest one?
 										// Actually, RetrospectiveBoard needs a sprintId.
 										// Let's pass the first one by default or manage state.

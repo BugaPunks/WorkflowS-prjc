@@ -3,7 +3,7 @@ import { loginViaApi } from "./utils/api-auth";
 
 test.describe("Retrospective Board", () => {
 	let projectId: string;
-	let sprintId: string;
+	let _sprintId: string;
 
 	test.beforeEach(async ({ page, request }) => {
 		// 1. Login as Admin to setup
@@ -11,24 +11,16 @@ test.describe("Retrospective Board", () => {
 
 		// 2. Create Project
 		const timestamp = Date.now();
-		const projectRes = await request.post(
+		const _projectRes = await request.post(
 			"http://localhost:5000/api/projects",
 			{
 				data: {
 					name: `Retro Project ${timestamp}`,
 					description: "Test for Retrospectives",
-					ownerId: (
-						await (
-							await request.get("http://localhost:5000/api/auth/me")
-						).json()
-					).id, // This endpoint might not exist, usually create returns ID.
-					// Actually api/auth/me might not exist. We use loginViaApi return.
-					// But wait, loginViaApi returns userId.
+					ownerId: "temp-id",
 				},
 			},
 		);
-		// We need valid ownerId. loginViaApi creates a user but doesn't return ID easily unless we capture it.
-		// Actually loginViaApi returns { userId }.
 	});
 
 	// Refined setup using the returned userId
@@ -68,7 +60,7 @@ test.describe("Retrospective Board", () => {
 			},
 		});
 		const sprintData = await sprintRes.json();
-		sprintId = sprintData.data.id;
+		_sprintId = sprintData.data.id;
 
 		// Navigate to Project -> Retro
 		await page.goto(`/projects/${projectId}`);
