@@ -37,6 +37,7 @@ model User {
   messages           Message[]
   projectMemberships ProjectMember[]
   notifications      Notification[]
+  retrospectiveItems RetrospectiveItem[]
 
   @@index([email])
   @@map("users")
@@ -121,6 +122,7 @@ model Sprint {
   project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
   backlogItems BacklogItem[]
   tasks       Task[]
+  retrospectiveItems RetrospectiveItem[]
 
   @@index([projectId])
   @@map("sprints")
@@ -354,4 +356,20 @@ model Notification {
 
   @@index([userId])
   @@map("notifications")
+}
+
+// Retrospectiva
+model RetrospectiveItem {
+  id        String   @id @default(cuid())
+  sprintId  String
+  type      String   // GOOD, BAD, ACTION
+  content   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  sprint    Sprint   @relation(fields: [sprintId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([sprintId])
+  @@map("retrospective_items")
 }

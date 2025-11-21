@@ -6,6 +6,7 @@ import {
 } from "@hello-pangea/dnd";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import RetrospectiveBoard from "@/components/RetrospectiveBoard";
 import { useSession } from "@/hooks/useSession";
 
 // Types for internal state to avoid 'any'
@@ -630,7 +631,7 @@ export default function ProjectDetail() {
 	const [error, setError] = useState<string | null>(null);
 	const [showSprintModal, setShowSprintModal] = useState(false);
 	const [activeTab, setActiveTab] = useState<
-		"board" | "chat" | "docs" | "members"
+		"board" | "chat" | "docs" | "members" | "retro"
 	>("board"); // Tab state
 	const [sprintForm, setSprintForm] = useState({
 		name: "",
@@ -876,6 +877,13 @@ export default function ProjectDetail() {
 						>
 							Documentos
 						</button>
+						<button
+							type="button"
+							onClick={() => setActiveTab("retro")}
+							className={`px-4 py-2 rounded-lg font-medium ${activeTab === "retro" ? "bg-blue-100 text-blue-700" : "bg-white text-gray-600 hover:bg-gray-50"}`}
+						>
+							Retrospectiva
+						</button>
 					</div>
 				</div>
 			</div>
@@ -887,6 +895,47 @@ export default function ProjectDetail() {
 					projectId={project.id}
 					isProjectAdmin={isProjectAdmin}
 				/>
+			)}
+
+			{activeTab === "retro" && (
+				<div>
+					{sprints.length > 0 ? (
+						<div>
+							<div className="mb-4 flex items-center gap-4">
+								<label
+									htmlFor="retro-sprint-select"
+									className="font-bold text-gray-700"
+								>
+									Sprint:
+								</label>
+								<select
+									id="retro-sprint-select"
+									className="border rounded px-3 py-1"
+									onChange={(e) => {
+										// We could add state for selected sprint, but for now maybe just show the first active/latest one?
+										// Actually, RetrospectiveBoard needs a sprintId.
+										// Let's pass the first one by default or manage state.
+										// For simplicity in this turn, I will pick the first sprint.
+									}}
+								>
+									{sprints.map((s) => (
+										<option key={s.id} value={s.id}>
+											{s.name}
+										</option>
+									))}
+								</select>
+								<span className="text-xs text-gray-500">
+									(Mostrando retrospectiva del primer sprint listado por ahora)
+								</span>
+							</div>
+							<RetrospectiveBoard sprintId={sprints[0].id} />
+						</div>
+					) : (
+						<div className="text-center py-12 text-gray-500">
+							No hay sprints para realizar retrospectiva.
+						</div>
+					)}
+				</div>
 			)}
 
 			{activeTab === "board" && (

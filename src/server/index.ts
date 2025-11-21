@@ -9,6 +9,7 @@ import documentsRouter from "./routes/documents";
 import metricsRouter from "./routes/metrics";
 import notificationsRouter from "./routes/notifications";
 import projectsRouter from "./routes/projects";
+import retrospectivesRouter from "./routes/retrospectives";
 import rubricsRouter from "./routes/rubrics";
 import sprintsRouter from "./routes/sprints";
 import tasksRouter from "./routes/tasks";
@@ -34,6 +35,7 @@ app.use("/api/documents", documentsRouter);
 app.use("/api/rubrics", rubricsRouter);
 app.use("/api/metrics", metricsRouter);
 app.use("/api/notifications", notificationsRouter);
+app.use("/api/retrospectives", retrospectivesRouter);
 
 // Health check
 app.get("/api/health", (_req, res) => {

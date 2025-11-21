@@ -1,4 +1,14 @@
 import { useEffect, useState } from "react";
+import {
+	Bar,
+	BarChart,
+	CartesianGrid,
+	Legend,
+	ResponsiveContainer,
+	Tooltip,
+	XAxis,
+	YAxis,
+} from "recharts";
 import { projectAPI } from "@/api/client";
 import { useSession } from "@/hooks/useSession";
 
@@ -45,6 +55,9 @@ export default function Reports() {
 	const [contributionData, setContributionData] = useState<ContributionData[]>(
 		[],
 	);
+	const [velocityData, setVelocityData] = useState<
+		{ name: string; committed: number; completed: number }[]
+	>([]);
 
 	const [_loading, setLoading] = useState(true);
 
@@ -92,6 +105,11 @@ export default function Reports() {
 			fetch(`/api/metrics/projects/${selectedProject}/contribution`)
 				.then((res) => res.json())
 				.then((data) => setContributionData(data.data || []));
+
+			// Load Velocity
+			fetch(`/api/metrics/projects/${selectedProject}/velocity`)
+				.then((res) => res.json())
+				.then((data) => setVelocityData(data.data || []));
 		}
 	}, [selectedProject]);
 
@@ -168,6 +186,30 @@ export default function Reports() {
 						</select>
 					</div>
 				</div>
+			</div>
+
+			{/* VELOCITY CHART */}
+			<div className="bg-white p-6 rounded-lg shadow-md mb-8">
+				<h2 className="text-xl font-semibold text-gray-800 mb-4">
+					Velocidad del Equipo (Velocity)
+				</h2>
+				{velocityData.length > 0 ? (
+					<div className="h-80">
+						<ResponsiveContainer width="100%" height="100%">
+							<BarChart data={velocityData}>
+								<CartesianGrid strokeDasharray="3 3" />
+								<XAxis dataKey="name" />
+								<YAxis />
+								<Tooltip />
+								<Legend />
+								<Bar dataKey="committed" name="Comprometido" fill="#9ca3af" />
+								<Bar dataKey="completed" name="Completado" fill="#3b82f6" />
+							</BarChart>
+						</ResponsiveContainer>
+					</div>
+				) : (
+					<p className="text-gray-500 py-4">No hay datos de velocidad.</p>
+				)}
 			</div>
 
 			{/* BURNDOWN CHART */}

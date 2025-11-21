@@ -138,6 +138,42 @@ router.get("/projects/:projectId/contribution", async (req, res) => {
 	}
 });
 
+// GET Velocity (Completed points per sprint)
+router.get("/projects/:projectId/velocity", async (req, res) => {
+	try {
+		const { projectId } = req.params;
+
+		const sprints = await prisma.sprint.findMany({
+			where: { projectId },
+			include: {
+				backlogItems: true,
+			},
+			orderBy: { startDate: "asc" },
+		});
+
+		const velocityData = sprints.map((sprint) => {
+			const committed = sprint.backlogItems.reduce(
+				(acc, item) => acc + (item.storyPoints || 0),
+				0,
+			);
+			const completed = sprint.backlogItems
+				.filter((item) => item.status === "DONE" || item.status === "COMPLETED")
+				.reduce((acc, item) => acc + (item.storyPoints || 0), 0);
+
+			return {
+				name: sprint.name,
+				committed,
+				completed,
+			};
+		});
+
+		res.json({ data: velocityData });
+	} catch (error) {
+		console.error("Error fetching velocity:", error);
+		res.status(500).json({ error: "Error fetching velocity data" });
+	}
+});
+
 // GET Export Project Data (CSV)
 router.get("/export/projects/:projectId", async (req, res) => {
 	try {
