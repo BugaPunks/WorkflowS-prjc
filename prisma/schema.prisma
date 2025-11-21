@@ -75,11 +75,16 @@ model Document {
   url         String   // Simulado
   type        String   // PDF, DOCX, etc.
   size        Int?     // KB
+  version     Int      @default(1)
+  parentId    String?  // ID del documento original si es una versión
   uploadedAt  DateTime @default(now())
 
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parent      Document? @relation("DocumentHistory", fields: [parentId], references: [id], onDelete: SetNull)
+  versions    Document[] @relation("DocumentHistory")
 
   @@index([projectId])
+  @@index([parentId])
   @@map("documents")
 }
 
