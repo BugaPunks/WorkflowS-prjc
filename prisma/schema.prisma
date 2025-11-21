@@ -33,7 +33,6 @@ model User {
   evaluations        Evaluation[]
   userStories        UserStory[]
   backlogItems       BacklogItem[]
-  conversationParticipants ConversationParticipant[]
   messages           Message[]
   projectMemberships ProjectMember[]
   notifications      Notification[]
@@ -293,52 +292,24 @@ model Chat {
   updatedAt   DateTime @updatedAt
 
   project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  conversations Conversation[]
+  messages    Message[]
 
   @@index([projectId])
   @@map("chats")
 }
 
-model Conversation {
-  id          String   @id @default(cuid())
-  chatId      String
-  topic       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  chat        Chat    @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  participants ConversationParticipant[]
-  messages    Message[]
-
-  @@index([chatId])
-  @@map("conversations")
-}
-
-model ConversationParticipant {
-  id             String   @id @default(cuid())
-  conversationId String
-  userId         String
-  joinedAt       DateTime @default(now())
-
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([conversationId, userId])
-  @@map("conversation_participants")
-}
-
 model Message {
   id             String   @id @default(cuid())
-  conversationId String
+  chatId         String
   userId         String
   content        String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chat           Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([conversationId])
+  @@index([chatId])
   @@map("messages")
 }
 

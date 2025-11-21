@@ -42,8 +42,35 @@ router.post("/", async (req, res) => {
 				user: {
 					select: { id: true, name: true, avatar: true },
 				},
+				sprint: {
+					include: {
+						project: {
+							include: {
+								members: true,
+							},
+						},
+					},
+				},
 			},
 		});
+
+		// Notificar a los miembros del equipo
+		const projectMembers = item.sprint.project.members;
+		const notifications = projectMembers
+			.filter((member) => member.userId !== userId) // No notificar al autor
+			.map((member) => ({
+				userId: member.userId,
+				title: "Nueva Nota en Retrospectiva",
+				message: `Se ha añadido una nota "${type}" en el sprint ${item.sprint.name}`,
+				type: "RETROSPECTIVE_ITEM",
+			}));
+
+		if (notifications.length > 0) {
+			await prisma.notification.createMany({
+				data: notifications,
+			});
+		}
+
 		res.status(201).json({ data: item });
 	} catch (error) {
 		console.error(error);

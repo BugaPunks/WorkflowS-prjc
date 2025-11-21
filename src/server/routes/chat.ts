@@ -3,22 +3,18 @@ import { prisma } from "../db";
 
 const router = Router();
 
-// GET mensajes de un proyecto (a través de su chat por defecto)
+// GET mensajes de un proyecto
 router.get("/:projectId/messages", async (req, res) => {
 	try {
 		const { projectId } = req.params;
 
-		// Buscar el chat del proyecto (asumimos uno por proyecto por ahora)
+		// Buscar el chat del proyecto
 		let chat = await prisma.chat.findFirst({
 			where: { projectId },
 			include: {
-				conversations: {
-					include: {
-						messages: {
-							include: { user: true },
-							orderBy: { createdAt: "asc" },
-						},
-					},
+				messages: {
+					include: { user: true },
+					orderBy: { createdAt: "asc" },
 				},
 			},
 		});
@@ -26,25 +22,14 @@ router.get("/:projectId/messages", async (req, res) => {
 		// Si no existe, crearlo
 		if (!chat) {
 			chat = await prisma.chat.create({
-				data: {
-					projectId,
-					conversations: {
-						create: { topic: "General" },
-					},
-				},
+				data: { projectId },
 				include: {
-					conversations: {
-						include: {
-							messages: { include: { user: true } },
-						},
-					},
+					messages: { include: { user: true } },
 				},
 			});
 		}
 
-		// Retornar mensajes de la conversación principal
-		const messages = chat.conversations[0]?.messages || [];
-		res.json({ data: messages });
+		res.json({ data: chat.messages || [] });
 	} catch (error) {
 		console.error("Error fetching messages:", error);
 		res.status(500).json({ error: "Error al obtener mensajes" });
@@ -61,21 +46,20 @@ router.post("/:projectId/messages", async (req, res) => {
 			return res.status(400).json({ error: "Faltan datos" });
 		}
 
-		// Buscar conversación principal
-		const chat = await prisma.chat.findFirst({
+		// Buscar chat
+		let chat = await prisma.chat.findFirst({
 			where: { projectId },
-			include: { conversations: true },
 		});
 
-		if (!chat || chat.conversations.length === 0) {
-			return res.status(404).json({ error: "Chat no inicializado" });
+		if (!chat) {
+			chat = await prisma.chat.create({
+				data: { projectId },
+			});
 		}
-
-		const conversationId = chat.conversations[0].id;
 
 		const message = await prisma.message.create({
 			data: {
-				conversationId,
+				chatId: chat.id,
 				userId,
 				content,
 			},
