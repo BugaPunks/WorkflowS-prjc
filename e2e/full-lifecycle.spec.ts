@@ -30,14 +30,14 @@ test.describe("Full Project Lifecycle: Teacher and Student", () => {
 		await page.getByRole("button", { name: "Nuevo Proyecto" }).click();
 		await page.fill('input[name="name"]', projectName);
 		await page.fill('textarea[name="description"]', "Proyecto de prueba E2E");
-		await page.getByRole("button", { name: "Crear", exact: true }).click();
+		await page.getByRole("button", { name: "Crear Proyecto", exact: true }).click();
 
 		// Verify creation and get ID from URL
 		await page
 			.locator(".bg-white")
 			.filter({ hasText: projectName })
 			.first()
-			.getByRole("button", { name: "Ver" })
+			.getByRole("button", { name: "Ver Proyecto" })
 			.click();
 		await expect(
 			page.getByRole("heading", { name: projectName }),

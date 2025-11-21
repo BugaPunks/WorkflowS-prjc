@@ -16,14 +16,14 @@ test.describe("Document Management & Versioning", () => {
 		await page.getByRole("button", { name: "Nuevo Proyecto" }).click();
 		await page.fill('input[name="name"]', `Project Docs ${timestamp}`);
 		await page.fill('textarea[name="description"]', "Desc");
-		await page.getByRole("button", { name: "Crear", exact: true }).click();
+		await page.getByRole("button", { name: "Crear Proyecto", exact: true }).click();
 
 		// Navigate to Details
 		await page
 			.locator(".bg-white")
 			.filter({ hasText: `Project Docs ${timestamp}` })
 			.first()
-			.getByRole("button", { name: "Ver" })
+			.getByRole("button", { name: "Ver Proyecto" })
 			.click();
 
 		// 3. Switch to Documents tab

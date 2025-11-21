@@ -1,10 +1,22 @@
+import {
+	BarChart3,
+	BookOpen,
+	Calendar,
+	CheckSquare,
+	LayoutDashboard,
+	LogOut,
+	Rocket,
+	Star,
+	User,
+} from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { NotificationBell } from "./NotificationBell";
 
 interface SidebarProps {
 	isOpen: boolean;
 	user?: { id: string; name: string; email: string; role: string };
-	onClose?: () => void; // Added for mobile close
+	onClose?: () => void;
 }
 
 export default function Sidebar({ isOpen, user, onClose }: SidebarProps) {
@@ -12,28 +24,31 @@ export default function Sidebar({ isOpen, user, onClose }: SidebarProps) {
 	const navigate = useNavigate();
 
 	const ADMIN_MENU = [
-		{ label: "Proyectos", href: "/projects", icon: "📊" },
-		{ label: "Sprints", href: "/sprints", icon: "🏃" },
-		{ label: "Tareas", href: "/tasks", icon: "✓" },
-		{ label: "Historias", href: "/user-stories", icon: "📖" },
-		{ label: "Reportes", href: "/reports", icon: "📈" },
-		{ label: "Evaluaciones", href: "/evaluations", icon: "⭐" },
-		{ label: "Calendario", href: "/calendar", icon: "📅" },
+		{ label: "Proyectos", href: "/projects", icon: LayoutDashboard },
+		{ label: "Sprints", href: "/sprints", icon: Rocket },
+		{ label: "Tareas", href: "/tasks", icon: CheckSquare },
+		{ label: "Historias", href: "/user-stories", icon: BookOpen },
+		{ label: "Reportes", href: "/reports", icon: BarChart3 },
+		{ label: "Evaluaciones", href: "/evaluations", icon: Star },
+		{ label: "Calendario", href: "/calendar", icon: Calendar },
 	];
 
 	const STUDENT_MENU = [
-		{ label: "Proyectos", href: "/projects", icon: "📊" },
-		{ label: "Sprints", href: "/sprints", icon: "🏃" },
-		{ label: "Tareas", href: "/tasks", icon: "✓" },
-		{ label: "Historias", href: "/user-stories", icon: "📖" },
-		{ label: "Reportes", href: "/reports", icon: "📈" },
-		{ label: "Calendario", href: "/calendar", icon: "📅" },
+		{ label: "Proyectos", href: "/projects", icon: LayoutDashboard },
+		{ label: "Sprints", href: "/sprints", icon: Rocket },
+		{ label: "Tareas", href: "/tasks", icon: CheckSquare },
+		{ label: "Historias", href: "/user-stories", icon: BookOpen },
+		{ label: "Reportes", href: "/reports", icon: BarChart3 },
+		{ label: "Calendario", href: "/calendar", icon: Calendar },
 	];
 
-	// Seleccionar menú según el rol del usuario
 	const filteredItems = user?.role === "ADMIN" ? ADMIN_MENU : STUDENT_MENU;
 
-	const isActive = (href: string) => location.pathname === href;
+	const isActive = (href: string) => {
+		// Handle root path or nested paths
+		if (href === "/projects" && location.pathname === "/") return true;
+		return location.pathname.startsWith(href);
+	};
 
 	const handleLogout = () => {
 		localStorage.removeItem("user");
@@ -42,105 +57,178 @@ export default function Sidebar({ isOpen, user, onClose }: SidebarProps) {
 
 	return (
 		<>
-			{/* Sidebar */}
+			{/* Desktop Sidebar */}
 			<aside
-				className={`${
-					isOpen ? "w-64" : "w-20"
-				} bg-gray-900 text-white transition-all duration-300 hidden lg:flex flex-col`}
+				className={cn(
+					"bg-white border-r border-gray-200 flex flex-col transition-all duration-300 hidden lg:flex fixed h-full z-30",
+					isOpen ? "w-64" : "w-20",
+				)}
 			>
-				{/* Logo */}
-				<div className="flex items-center justify-center h-16 border-b border-gray-700">
-					<span className={`font-bold text-xl ${!isOpen && "hidden"}`}>WS</span>
+				{/* Logo Area */}
+				<div className="flex items-center h-16 px-6 border-b border-gray-100">
+					<div className="flex items-center gap-3 text-indigo-600">
+						<div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-lg shrink-0">
+							W
+						</div>
+						<span
+							className={cn(
+								"font-bold text-xl text-gray-900 tracking-tight",
+								!isOpen && "hidden",
+							)}
+						>
+							WorkflowS
+						</span>
+					</div>
 				</div>
 
 				{/* Navigation */}
-				<nav className="flex-1 px-4 py-6 space-y-2">
-					{filteredItems.map((item) => (
-						<Link
-							key={item.href}
-							to={item.href}
-							className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-								isActive(item.href)
-									? "bg-blue-600 text-white"
-									: "text-gray-300 hover:bg-gray-800"
-							}`}
-						>
-							<span className="text-xl">{item.icon}</span>
-							{isOpen && <span className="font-medium">{item.label}</span>}
-						</Link>
-					))}
+				<nav className="flex-1 px-3 py-6 space-y-1">
+					{filteredItems.map((item) => {
+						const active = isActive(item.href);
+						return (
+							<Link
+								key={item.href}
+								to={item.href}
+								className={cn(
+									"flex items-center gap-3 px-3 py-2.5 rounded-md transition-all group",
+									active
+										? "bg-indigo-50 text-indigo-700 font-medium"
+										: "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+								)}
+							>
+								<item.icon
+									size={20}
+									className={cn(
+										"shrink-0 transition-colors",
+										active
+											? "text-indigo-600"
+											: "text-gray-400 group-hover:text-gray-600",
+									)}
+								/>
+								{isOpen && <span>{item.label}</span>}
+							</Link>
+						);
+					})}
 				</nav>
 
-				{/* User Info & Logout */}
-				{isOpen && (
-					<div className="border-t border-gray-700 p-4">
-						<div className="mb-4 flex justify-end">
-							<NotificationBell />
+				{/* User Profile & Footer */}
+				<div className="p-4 border-t border-gray-100 bg-gray-50/50">
+					{isOpen ? (
+						<div className="flex flex-col gap-3">
+							<div className="flex items-center gap-3">
+								<div className="w-10 h-10 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-700 font-semibold text-sm shrink-0">
+									{user?.name?.charAt(0).toUpperCase() || <User size={18} />}
+								</div>
+								<div className="flex-1 min-w-0">
+									<p className="text-sm font-medium text-gray-900 truncate">
+										{user?.name}
+									</p>
+									<p className="text-xs text-gray-500 truncate capitalize">
+										{user?.role?.toLowerCase()}
+									</p>
+								</div>
+							</div>
+							<div className="flex items-center justify-between gap-2 mt-1">
+								<NotificationBell />
+								<button
+									type="button"
+									onClick={handleLogout}
+									className="flex-1 flex items-center justify-center gap-2 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors border border-transparent hover:border-red-100"
+								>
+									<LogOut size={14} />
+									<span>Salir</span>
+								</button>
+							</div>
 						</div>
-						<div className="flex items-center gap-3 mb-3">
-							<div className="w-10 h-10 bg-linear-to-br from-blue-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+					) : (
+						<div className="flex flex-col items-center gap-4">
+							<div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-xs">
 								{user?.name?.charAt(0).toUpperCase()}
 							</div>
-							<div className="text-sm overflow-hidden">
-								<p className="font-medium truncate">{user?.name}</p>
-								<p className="text-gray-400 text-xs truncate">{user?.role}</p>
-							</div>
+							<button
+								type="button"
+								onClick={handleLogout}
+								className="text-gray-400 hover:text-red-600 transition-colors"
+							>
+								<LogOut size={20} />
+							</button>
 						</div>
-						<button
-							type="button"
-							onClick={handleLogout}
-							className="w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
-						>
-							<span>🚪</span> Cerrar Sesión
-						</button>
-					</div>
-				)}
+					)}
+				</div>
 			</aside>
 
-			{/* Mobile Sidebar */}
+			{/* Mobile Overlay & Sidebar */}
 			{isOpen && (
 				<div className="fixed inset-0 z-40 lg:hidden">
 					<button
 						type="button"
-						className="absolute inset-0 bg-black bg-opacity-50 w-full h-full cursor-default"
+						className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm w-full h-full cursor-default transition-opacity"
 						onClick={onClose}
 						onKeyDown={(e) => {
 							if (e.key === "Escape" && onClose) onClose();
 						}}
 						aria-label="Cerrar menú"
 					/>
-					<aside className="absolute left-0 top-0 bottom-0 w-64 bg-gray-900 text-white flex flex-col">
-						<div className="flex items-center justify-center h-16 border-b border-gray-700">
-							<span className="font-bold text-xl">WorkflowS</span>
+					<aside className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-2xl flex flex-col animate-in slide-in-from-left duration-200">
+						<div className="flex items-center justify-between h-16 px-6 border-b border-gray-100">
+							<div className="flex items-center gap-3 text-indigo-600">
+								<div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-lg">
+									W
+								</div>
+								<span className="font-bold text-xl text-gray-900 tracking-tight">
+									WorkflowS
+								</span>
+							</div>
 						</div>
-						<nav className="flex-1 px-4 py-6 space-y-2">
-							{filteredItems.map((item) => (
-								<Link
-									key={item.href}
-									to={item.href}
-									onClick={onClose}
-									className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-										isActive(item.href)
-											? "bg-blue-600 text-white"
-											: "text-gray-300 hover:bg-gray-800"
-									}`}
-								>
-									<span className="text-xl">{item.icon}</span>
-									<span className="font-medium">{item.label}</span>
-								</Link>
-							))}
+
+						<nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+							{filteredItems.map((item) => {
+								const active = isActive(item.href);
+								return (
+									<Link
+										key={item.href}
+										to={item.href}
+										onClick={onClose}
+										className={cn(
+											"flex items-center gap-3 px-4 py-3 rounded-lg transition-all",
+											active
+												? "bg-indigo-50 text-indigo-700 font-medium"
+												: "text-gray-600 hover:bg-gray-50 hover:text-gray-900",
+										)}
+									>
+										<item.icon
+											size={22}
+											className={cn(
+												active ? "text-indigo-600" : "text-gray-400",
+											)}
+										/>
+										<span className="font-medium">{item.label}</span>
+									</Link>
+								);
+							})}
+						</nav>
+
+						<div className="p-4 border-t border-gray-100 bg-gray-50">
 							<button
 								type="button"
 								onClick={handleLogout}
-								className="flex w-full items-center gap-3 px-4 py-3 rounded-lg text-red-400 hover:bg-gray-800 transition-colors mt-4"
+								className="flex w-full items-center justify-center gap-2 px-4 py-3 rounded-lg text-red-600 bg-white border border-gray-200 shadow-sm hover:bg-red-50 hover:border-red-100 transition-all font-medium"
 							>
-								<span className="text-xl">🚪</span>
-								<span className="font-medium">Cerrar Sesión</span>
+								<LogOut size={18} />
+								<span>Cerrar Sesión</span>
 							</button>
-						</nav>
+						</div>
 					</aside>
 				</div>
 			)}
+
+			{/* Spacer for fixed sidebar on desktop */}
+			<div
+				className={cn(
+					"hidden lg:block shrink-0 transition-all duration-300",
+					isOpen ? "w-64" : "w-20",
+				)}
+			/>
 		</>
 	);
 }

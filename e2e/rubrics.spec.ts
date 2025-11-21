@@ -18,13 +18,13 @@ test.describe("Evaluations & Rubrics", () => {
 		await page.getByRole("button", { name: "Nuevo Proyecto" }).click();
 		await page.fill('input[name="name"]', projectName);
 		await page.fill('textarea[name="description"]', "Desc");
-		await page.getByRole("button", { name: "Crear", exact: true }).click();
+		await page.getByRole("button", { name: "Crear Proyecto", exact: true }).click();
 
 		await page
 			.locator(".bg-white")
 			.filter({ hasText: projectName })
 			.first()
-			.getByRole("button", { name: "Ver" })
+			.getByRole("button", { name: "Ver Proyecto" })
 			.click();
 
 		await page.waitForURL(/\/projects\/[a-zA-Z0-9]+/);

@@ -21,14 +21,14 @@ test.describe("Notification System", () => {
 		await page.getByRole("button", { name: "Nuevo Proyecto" }).click();
 		await page.fill('input[name="name"]', projectName);
 		await page.fill('textarea[name="description"]', "Desc");
-		await page.getByRole("button", { name: "Crear", exact: true }).click();
+		await page.getByRole("button", { name: "Crear Proyecto", exact: true }).click();
 
 		// Get project ID
 		await page
 			.locator(".bg-white")
 			.filter({ hasText: projectName })
 			.first()
-			.getByRole("button", { name: "Ver" })
+			.getByRole("button", { name: "Ver Proyecto" })
 			.click();
 		// Wait for navigation
 		await expect(page).toHaveURL(/\/projects\//);
@@ -90,8 +90,9 @@ test.describe("Notification System", () => {
 
 		// 8. Verify badge update
 		// Close and reopen to refresh state if needed, or observe UI change
-		await page.getByLabel("Notificaciones").click(); // Close
-		await page.getByLabel("Notificaciones").click(); // Open
+		// Use .first() to target desktop sidebar if both exist or specificity
+		await page.getByLabel("Notificaciones").first().click(); // Close
+		await page.getByLabel("Notificaciones").first().click(); // Open
 
 		// Check visual indicator (optional)
 	});

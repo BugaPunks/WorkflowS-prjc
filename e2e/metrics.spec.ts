@@ -35,14 +35,14 @@ test.describe("Metrics & Reports", () => {
 		await page.getByRole("button", { name: "Nuevo Proyecto" }).click();
 		await page.fill('input[name="name"]', projectName);
 		await page.fill('textarea[name="description"]', "Desc");
-		await page.getByRole("button", { name: "Crear", exact: true }).click();
+		await page.getByRole("button", { name: "Crear Proyecto", exact: true }).click();
 
 		// Go to Sprints (inside Project) to create one
 		await page
 			.locator(".bg-white")
 			.filter({ hasText: projectName })
 			.first()
-			.getByRole("button", { name: "Ver" })
+			.getByRole("button", { name: "Ver Proyecto" })
 			.click();
 		// Assuming default tab is Board/Sprints
 		// Create Sprint

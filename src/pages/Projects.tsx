@@ -1,7 +1,17 @@
+import {
+	ArrowRight,
+	Calendar,
+	FolderOpen,
+	Plus,
+	Trash2,
+	X,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { projectAPI } from "@/api/client";
+import { Button } from "@/components/Button";
 import { useSession } from "@/hooks/useSession";
+import { cn } from "@/lib/utils";
 
 interface Project {
 	id: string;
@@ -58,12 +68,11 @@ export default function Projects() {
 			const projectData = {
 				name: formData.name,
 				description: formData.description,
-				ownerId: user.id, // Añadir el ID del usuario actual como ownerId
+				ownerId: user.id,
 				startDate: formData.startDate,
 				endDate: formData.endDate,
 			};
 
-			// Usar el cliente API para manejar correctamente la respuesta y errores
 			await projectAPI.create(projectData);
 			setFormData({
 				name: "",
@@ -96,38 +105,44 @@ export default function Projects() {
 	const canCreateProject = user?.role === "ADMIN";
 
 	return (
-		<div className="p-8 max-w-7xl mx-auto">
+		<div className="animate-in fade-in duration-500">
 			{/* Header */}
-			<div className="flex items-center justify-between mb-8">
+			<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
 				<div>
-					<h2 className="text-3xl font-bold text-gray-900">Proyectos</h2>
-					<p className="text-gray-600 mt-2">
+					<h2 className="text-2xl font-bold text-gray-900 tracking-tight">
+						Proyectos
+					</h2>
+					<p className="text-gray-500 mt-1 text-sm">
 						Gestiona tus proyectos y colabora con tu equipo
 					</p>
 				</div>
 				{canCreateProject && (
-					<button
-						type="button"
+					<Button
 						onClick={() => setShowModal(true)}
-						className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium"
+						variant="primary"
+						className="gap-2 shadow-lg shadow-blue-500/20"
 					>
-						+ Nuevo Proyecto
-					</button>
+						<Plus size={18} />
+						Nuevo Proyecto
+					</Button>
 				)}
 			</div>
 
 			{/* Error Message */}
 			{error && (
-				<div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+				<div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 text-sm flex items-center gap-2">
+					<div className="w-2 h-2 rounded-full bg-red-500" />
 					{error}
 				</div>
 			)}
 
 			{/* Loading */}
 			{isLoading && (
-				<div className="text-center py-12">
-					<div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-					<p className="text-gray-600 mt-4">Cargando proyectos...</p>
+				<div className="text-center py-20">
+					<div className="inline-block animate-spin rounded-full h-8 w-8 border-2 border-indigo-600 border-t-transparent" />
+					<p className="text-gray-500 mt-4 text-sm font-medium">
+						Cargando proyectos...
+					</p>
 				</div>
 			)}
 
@@ -137,43 +152,68 @@ export default function Projects() {
 					{projects.map((project) => (
 						<div
 							key={project.id}
-							className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow p-6"
+							className="group bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 p-6 relative overflow-hidden flex flex-col"
 						>
-							<div className="flex items-start justify-between mb-4">
-								<div>
-									<h3 className="text-lg font-semibold text-gray-900">
-										{project.name}
-									</h3>
-									<p className="text-sm text-gray-500">
-										{new Date(project.createdAt).toLocaleDateString()}
-									</p>
-									{project.startDate && project.endDate && (
-										<p className="text-xs text-gray-400 mt-1">
-											{new Date(project.startDate).toLocaleDateString()} -{" "}
-											{new Date(project.endDate).toLocaleDateString()}
-										</p>
+							{/* Status Badge */}
+							<div className="absolute top-6 right-6">
+								<span
+									className={cn(
+										"inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800",
+										project.status === "COMPLETED" &&
+											"bg-gray-100 text-gray-800",
+										project.status === "IN_PROGRESS" &&
+											"bg-blue-100 text-blue-800",
 									)}
-								</div>
-								<span className="inline-block px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
+								>
 									{project.status || "ACTIVO"}
 								</span>
 							</div>
-							<p className="text-gray-600 mb-6">{project.description}</p>
-							<div className="flex gap-2">
-								<button
-									type="button"
+
+							<div className="mb-4 pr-20">
+								<h3 className="text-lg font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors line-clamp-1">
+									<button
+										type="button"
+										onClick={() => navigate(`/projects/${project.id}`)}
+										className="hover:underline focus:outline-none"
+									>
+										{project.name}
+									</button>
+								</h3>
+								<div className="flex items-center gap-2 text-xs text-gray-400 mt-2">
+									<Calendar size={14} />
+									<span>
+										{new Date(project.createdAt).toLocaleDateString(undefined, {
+											year: "numeric",
+											month: "short",
+											day: "numeric",
+										})}
+									</span>
+								</div>
+							</div>
+
+							<p className="text-gray-600 mb-6 text-sm line-clamp-2 h-10 leading-relaxed flex-1">
+								{project.description || "Sin descripción"}
+							</p>
+
+							<div className="flex items-center justify-between pt-4 border-t border-gray-50 mt-auto">
+								<Button
+									variant="ghost"
+									size="sm"
+									className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 -ml-2 px-2 gap-1"
 									onClick={() => navigate(`/projects/${project.id}`)}
-									className="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 font-medium text-sm"
 								>
-									Ver
-								</button>
+									Ver Proyecto
+									<ArrowRight size={16} />
+								</Button>
+
 								{canCreateProject && (
 									<button
 										type="button"
 										onClick={() => handleDeleteProject(project.id)}
-										className="flex-1 bg-red-100 text-red-700 px-3 py-2 rounded-lg hover:bg-red-200 font-medium text-sm"
+										className="text-gray-400 hover:text-red-600 p-2 rounded-md hover:bg-red-50 transition-colors"
+										title="Eliminar proyecto"
 									>
-										Eliminar
+										<Trash2 size={16} />
 									</button>
 								)}
 							</div>
@@ -184,125 +224,140 @@ export default function Projects() {
 
 			{/* Empty State */}
 			{!isLoading && projects.length === 0 && (
-				<div className="text-center py-16">
-					<div className="text-5xl mb-4">📁</div>
-					<h3 className="text-xl font-semibold text-gray-900 mb-2">
+				<div className="text-center py-24 bg-white rounded-2xl border border-dashed border-gray-200">
+					<div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+						<FolderOpen size={32} />
+					</div>
+					<h3 className="text-lg font-semibold text-gray-900 mb-1">
 						No hay proyectos
 					</h3>
-					<p className="text-gray-600 mb-6">
+					<p className="text-gray-500 mb-6 max-w-xs mx-auto text-sm">
 						{canCreateProject
-							? "Crea tu primer proyecto para comenzar"
-							: "No estás asignado a ningún proyecto"}
+							? "Comienza creando tu primer proyecto para gestionar tu equipo."
+							: "Aún no tienes proyectos asignados."}
 					</p>
 					{canCreateProject && (
-						<button
-							type="button"
-							onClick={() => setShowModal(true)}
-							className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium"
-						>
-							Crear Proyecto
-						</button>
+						<Button onClick={() => setShowModal(true)} variant="primary">
+							Crear Primer Proyecto
+						</Button>
 					)}
 				</div>
 			)}
 
 			{/* Modal */}
 			{showModal && canCreateProject && (
-				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-					<div className="bg-white rounded-lg p-8 w-full max-w-md">
-						<h3 className="text-2xl font-bold text-gray-900 mb-6">
-							Crear Nuevo Proyecto
-						</h3>
-						<form onSubmit={handleCreateProject}>
-							<div className="mb-4">
-								<label
-									htmlFor="project-name"
-									className="block text-sm font-medium text-gray-700 mb-2"
-								>
-									Nombre
-								</label>
-								<input
-									id="project-name"
-									name="name"
-									type="text"
-									value={formData.name}
-									onChange={(e) =>
-										setFormData({ ...formData, name: e.target.value })
-									}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder="Nombre del proyecto"
-									required
-								/>
-							</div>
-							<div className="mb-6">
-								<label
-									htmlFor="project-desc"
-									className="block text-sm font-medium text-gray-700 mb-2"
-								>
-									Descripción
-								</label>
-								<textarea
-									id="project-desc"
-									name="description"
-									value={formData.description}
-									onChange={(e) =>
-										setFormData({ ...formData, description: e.target.value })
-									}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder="Descripción del proyecto"
-									rows={4}
-								/>
-							</div>
-							<div className="grid grid-cols-2 gap-4 mb-6">
+				<div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+					<button
+						type="button"
+						className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity w-full h-full cursor-default"
+						onClick={() => setShowModal(false)}
+						aria-label="Close modal"
+					/>
+					<div className="bg-white rounded-xl shadow-2xl w-full max-w-md relative overflow-hidden animate-in zoom-in-95 duration-200">
+						<div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+							<h3 className="text-lg font-semibold text-gray-900">
+								Nuevo Proyecto
+							</h3>
+							<button
+								type="button"
+								onClick={() => setShowModal(false)}
+								className="text-gray-400 hover:text-gray-600 transition-colors"
+							>
+								<X size={20} />
+							</button>
+						</div>
+
+						<form onSubmit={handleCreateProject} className="p-6">
+							<div className="space-y-4">
 								<div>
 									<label
-										htmlFor="start-date"
-										className="block text-sm font-medium text-gray-700 mb-2"
+										htmlFor="project-name"
+										className="block text-sm font-medium text-gray-700 mb-1.5"
 									>
-										Fecha Inicio
+										Nombre del proyecto
 									</label>
 									<input
-										id="start-date"
-										type="date"
-										value={formData.startDate}
+										id="project-name"
+										name="name"
+										type="text"
+										value={formData.name}
 										onChange={(e) =>
-											setFormData({ ...formData, startDate: e.target.value })
+											setFormData({ ...formData, name: e.target.value })
 										}
-										className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+										className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+										placeholder="Ej. Sistema de Gestión..."
+										required
 									/>
 								</div>
 								<div>
 									<label
-										htmlFor="end-date"
-										className="block text-sm font-medium text-gray-700 mb-2"
+										htmlFor="project-desc"
+										className="block text-sm font-medium text-gray-700 mb-1.5"
 									>
-										Fecha Fin
+										Descripción
 									</label>
-									<input
-										id="end-date"
-										type="date"
-										value={formData.endDate}
+									<textarea
+										id="project-desc"
+										name="description"
+										value={formData.description}
 										onChange={(e) =>
-											setFormData({ ...formData, endDate: e.target.value })
+											setFormData({ ...formData, description: e.target.value })
 										}
-										className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+										className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm resize-none"
+										placeholder="Breve descripción del proyecto..."
+										rows={3}
 									/>
 								</div>
+								<div className="grid grid-cols-2 gap-4">
+									<div>
+										<label
+											htmlFor="start-date"
+											className="block text-sm font-medium text-gray-700 mb-1.5"
+										>
+											Inicio
+										</label>
+										<input
+											id="start-date"
+											type="date"
+											value={formData.startDate}
+											onChange={(e) =>
+												setFormData({ ...formData, startDate: e.target.value })
+											}
+											className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm text-gray-600"
+										/>
+									</div>
+									<div>
+										<label
+											htmlFor="end-date"
+											className="block text-sm font-medium text-gray-700 mb-1.5"
+										>
+											Fin
+										</label>
+										<input
+											id="end-date"
+											type="date"
+											value={formData.endDate}
+											onChange={(e) =>
+												setFormData({ ...formData, endDate: e.target.value })
+											}
+											className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm text-gray-600"
+										/>
+									</div>
+								</div>
 							</div>
-							<div className="flex gap-3">
-								<button
+
+							<div className="flex gap-3 mt-8">
+								<Button
 									type="button"
 									onClick={() => setShowModal(false)}
-									className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium"
+									variant="default"
+									className="flex-1"
 								>
 									Cancelar
-								</button>
-								<button
-									type="submit"
-									className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-								>
-									Crear
-								</button>
+								</Button>
+								<Button type="submit" variant="primary" className="flex-1">
+									Crear Proyecto
+								</Button>
 							</div>
 						</form>
 					</div>

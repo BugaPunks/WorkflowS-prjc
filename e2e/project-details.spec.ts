@@ -75,7 +75,7 @@ test.describe("Project Details", () => {
 		await page.getByRole("button", { name: "Nuevo Proyecto" }).click();
 		await page.fill('input[name="name"]', projectName);
 		await page.fill('textarea[name="description"]', "Project Description");
-		await page.getByRole("button", { name: "Crear", exact: true }).click();
+		await page.getByRole("button", { name: "Crear Proyecto", exact: true }).click();
 
 		// Should appear in list
 		await expect(page.getByText(projectName)).toBeVisible();
@@ -87,7 +87,7 @@ test.describe("Project Details", () => {
 			.locator(".bg-white") // Card class
 			.filter({ hasText: projectName })
 			.first() // Use first match which should be the card (or refine if multiple cards match)
-			.getByRole("button", { name: "Ver" })
+			.getByRole("button", { name: "Ver Proyecto" })
 			.click();
 
 		// Check Header
@@ -122,14 +122,14 @@ test.describe("Project Details", () => {
 		const pName = `${projectName} Tabs`;
 		await page.fill('input[name="name"]', pName);
 		await page.fill('textarea[name="description"]', "Desc");
-		await page.getByRole("button", { name: "Crear", exact: true }).click();
+		await page.getByRole("button", { name: "Crear Proyecto", exact: true }).click();
 
 		// Navigate
 		await page
 			.locator(".bg-white")
 			.filter({ hasText: pName })
 			.first()
-			.getByRole("button", { name: "Ver" })
+			.getByRole("button", { name: "Ver Proyecto" })
 			.click();
 
 		// Click Chat Tab
