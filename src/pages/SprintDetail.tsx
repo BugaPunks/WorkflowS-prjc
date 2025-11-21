@@ -6,7 +6,6 @@ import {
 } from "@hello-pangea/dnd";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import AppShell from "@/components/AppShell";
 
 interface Sprint {
 	id: string;
@@ -24,13 +23,6 @@ interface Task {
 	deadline: string;
 }
 
-interface User {
-	id: string;
-	name: string;
-	email: string;
-	role: string;
-}
-
 const COLUMNS = {
 	TODO: "Pendiente",
 	IN_PROGRESS: "En Progreso",
@@ -40,7 +32,6 @@ const COLUMNS = {
 export default function SprintDetail() {
 	const navigate = useNavigate();
 	const { id } = useParams<{ id: string }>();
-	const [user, setUser] = useState<User | null>(null);
 	const [sprint, setSprint] = useState<Sprint | null>(null);
 	const [tasks, setTasks] = useState<Task[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
@@ -71,7 +62,6 @@ export default function SprintDetail() {
 			navigate("/login");
 			return;
 		}
-		setUser(JSON.parse(storedUser));
 		loadSprint();
 	}, [navigate, loadSprint]);
 
@@ -123,181 +113,172 @@ export default function SprintDetail() {
 
 	if (isLoading) {
 		return (
-			<AppShell user={user || undefined}>
-				<div className="flex items-center justify-center min-h-screen">
-					<div className="text-center">
-						<div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-						<p className="text-gray-600 mt-4">Cargando sprint...</p>
-					</div>
+			<div className="flex items-center justify-center min-h-screen">
+				<div className="text-center">
+					<div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+					<p className="text-gray-600 mt-4">Cargando sprint...</p>
 				</div>
-			</AppShell>
+			</div>
 		);
 	}
 
 	if (error || !sprint) {
 		return (
-			<AppShell user={user || undefined}>
-				<div className="p-8">
-					<div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-						{error || "Sprint no encontrado"}
-					</div>
-					<button
-						type="button"
-						onClick={() => navigate("/sprints")}
-						className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium"
-					>
-						Volver a Sprints
-					</button>
+			<div className="p-8">
+				<div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+					{error || "Sprint no encontrado"}
 				</div>
-			</AppShell>
+				<button
+					type="button"
+					onClick={() => navigate("/sprints")}
+					className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium"
+				>
+					Volver a Sprints
+				</button>
+			</div>
 		);
 	}
 
 	return (
-		<AppShell user={user || undefined}>
-			<div className="p-8 max-w-7xl mx-auto">
-				{/* Header */}
-				<div className="mb-8">
-					<button
-						type="button"
-						onClick={() => navigate("/sprints")}
-						className="text-blue-600 hover:text-blue-700 font-medium mb-4 flex items-center gap-2"
-					>
-						← Volver a Sprints
-					</button>
-					<h1 className="text-4xl font-bold text-gray-900">{sprint.name}</h1>
-					<p className="text-gray-600 mt-2">{sprint.description}</p>
+		<div className="p-8 max-w-7xl mx-auto">
+			{/* Header */}
+			<div className="mb-8">
+				<button
+					type="button"
+					onClick={() => navigate("/sprints")}
+					className="text-blue-600 hover:text-blue-700 font-medium mb-4 flex items-center gap-2"
+				>
+					← Volver a Sprints
+				</button>
+				<h1 className="text-4xl font-bold text-gray-900">{sprint.name}</h1>
+				<p className="text-gray-600 mt-2">{sprint.description}</p>
 
-					{/* Sprint Stats */}
-					<div className="flex items-center gap-6 mt-6">
-						<div>
-							<span className="inline-block px-4 py-2 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
-								{sprint.status}
-							</span>
-						</div>
-						<div className="text-sm text-gray-600">
-							<strong>Inicio:</strong>{" "}
-							{new Date(sprint.startDate).toLocaleDateString()}
-						</div>
-						<div className="text-sm text-gray-600">
-							<strong>Fin:</strong>{" "}
-							{new Date(sprint.endDate).toLocaleDateString()}
-						</div>
-						<div className="text-sm font-semibold text-blue-600">
-							{getDaysRemaining(sprint.endDate)} días restantes
-						</div>
+				{/* Sprint Stats */}
+				<div className="flex items-center gap-6 mt-6">
+					<div>
+						<span className="inline-block px-4 py-2 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
+							{sprint.status}
+						</span>
+					</div>
+					<div className="text-sm text-gray-600">
+						<strong>Inicio:</strong>{" "}
+						{new Date(sprint.startDate).toLocaleDateString()}
+					</div>
+					<div className="text-sm text-gray-600">
+						<strong>Fin:</strong>{" "}
+						{new Date(sprint.endDate).toLocaleDateString()}
+					</div>
+					<div className="text-sm font-semibold text-blue-600">
+						{getDaysRemaining(sprint.endDate)} días restantes
 					</div>
 				</div>
+			</div>
 
-				{/* Progress Bar */}
-				<div className="mb-8">
-					<div className="flex items-center justify-between mb-2">
-						<span className="text-sm font-medium text-gray-700">Progreso</span>
-						<span className="text-sm text-gray-600">
-							{Math.min(
+			{/* Progress Bar */}
+			<div className="mb-8">
+				<div className="flex items-center justify-between mb-2">
+					<span className="text-sm font-medium text-gray-700">Progreso</span>
+					<span className="text-sm text-gray-600">
+						{Math.min(
+							100,
+							Math.max(0, ((14 - getDaysRemaining(sprint.endDate)) / 14) * 100),
+						).toFixed(0)}
+						%
+					</span>
+				</div>
+				<div className="w-full bg-gray-200 rounded-full h-3">
+					<div
+						className="bg-blue-600 h-3 rounded-full transition-all"
+						style={{
+							width: `${Math.min(
 								100,
 								Math.max(
 									0,
 									((14 - getDaysRemaining(sprint.endDate)) / 14) * 100,
 								),
-							).toFixed(0)}
-							%
-						</span>
-					</div>
-					<div className="w-full bg-gray-200 rounded-full h-3">
-						<div
-							className="bg-blue-600 h-3 rounded-full transition-all"
-							style={{
-								width: `${Math.min(
-									100,
-									Math.max(
-										0,
-										((14 - getDaysRemaining(sprint.endDate)) / 14) * 100,
-									),
-								)}%`,
-							}}
-						/>
-					</div>
-				</div>
-
-				{/* Tasks Section */}
-				<div>
-					<h2 className="text-2xl font-bold text-gray-900 mb-6">
-						Tablero Kanban
-					</h2>
-
-					{tasks.length === 0 ? (
-						<div className="bg-white rounded-lg shadow-md p-8 text-center">
-							<div className="text-5xl mb-4">📝</div>
-							<h3 className="text-xl font-semibold text-gray-900 mb-2">
-								No hay tareas en este sprint
-							</h3>
-							<p className="text-gray-600">
-								Las tareas asignadas aparecerán aquí
-							</p>
-						</div>
-					) : (
-						<DragDropContext onDragEnd={onDragEnd}>
-							<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-								{Object.entries(COLUMNS).map(([statusKey, statusLabel]) => (
-									<div
-										key={statusKey}
-										className="bg-gray-100 rounded-lg p-4 flex flex-col h-full min-h-[500px]"
-									>
-										<h3 className="font-bold text-gray-700 mb-4 flex justify-between items-center">
-											{statusLabel}
-											<span className="bg-gray-200 text-gray-600 px-2 py-1 rounded-full text-xs">
-												{getTasksByStatus(statusKey).length}
-											</span>
-										</h3>
-										<Droppable droppableId={statusKey}>
-											{(provided) => (
-												<div
-													{...provided.droppableProps}
-													ref={provided.innerRef}
-													className="flex-1 space-y-3"
-												>
-													{getTasksByStatus(statusKey).map((task, index) => (
-														<Draggable
-															key={task.id}
-															draggableId={task.id}
-															index={index}
-														>
-															{(provided) => (
-																<div
-																	ref={provided.innerRef}
-																	{...provided.draggableProps}
-																	{...provided.dragHandleProps}
-																	className="bg-white p-4 rounded shadow-sm hover:shadow-md transition-shadow cursor-grab"
-																>
-																	<div className="flex justify-between items-start mb-2">
-																		<h4 className="font-semibold text-gray-800">
-																			{task.title}
-																		</h4>
-																	</div>
-																	{task.deadline && (
-																		<div className="text-xs text-gray-500 mt-2">
-																			📅{" "}
-																			{new Date(
-																				task.deadline,
-																			).toLocaleDateString()}
-																		</div>
-																	)}
-																</div>
-															)}
-														</Draggable>
-													))}
-													{provided.placeholder}
-												</div>
-											)}
-										</Droppable>
-									</div>
-								))}
-							</div>
-						</DragDropContext>
-					)}
+							)}%`,
+						}}
+					/>
 				</div>
 			</div>
-		</AppShell>
+
+			{/* Tasks Section */}
+			<div>
+				<h2 className="text-2xl font-bold text-gray-900 mb-6">
+					Tablero Kanban
+				</h2>
+
+				{tasks.length === 0 ? (
+					<div className="bg-white rounded-lg shadow-md p-8 text-center">
+						<div className="text-5xl mb-4">📝</div>
+						<h3 className="text-xl font-semibold text-gray-900 mb-2">
+							No hay tareas en este sprint
+						</h3>
+						<p className="text-gray-600">
+							Las tareas asignadas aparecerán aquí
+						</p>
+					</div>
+				) : (
+					<DragDropContext onDragEnd={onDragEnd}>
+						<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+							{Object.entries(COLUMNS).map(([statusKey, statusLabel]) => (
+								<div
+									key={statusKey}
+									className="bg-gray-100 rounded-lg p-4 flex flex-col h-full min-h-[500px]"
+								>
+									<h3 className="font-bold text-gray-700 mb-4 flex justify-between items-center">
+										{statusLabel}
+										<span className="bg-gray-200 text-gray-600 px-2 py-1 rounded-full text-xs">
+											{getTasksByStatus(statusKey).length}
+										</span>
+									</h3>
+									<Droppable droppableId={statusKey}>
+										{(provided) => (
+											<div
+												{...provided.droppableProps}
+												ref={provided.innerRef}
+												className="flex-1 space-y-3"
+											>
+												{getTasksByStatus(statusKey).map((task, index) => (
+													<Draggable
+														key={task.id}
+														draggableId={task.id}
+														index={index}
+													>
+														{(provided) => (
+															<div
+																ref={provided.innerRef}
+																{...provided.draggableProps}
+																{...provided.dragHandleProps}
+																className="bg-white p-4 rounded shadow-sm hover:shadow-md transition-shadow cursor-grab"
+															>
+																<div className="flex justify-between items-start mb-2">
+																	<h4 className="font-semibold text-gray-800">
+																		{task.title}
+																	</h4>
+																</div>
+																{task.deadline && (
+																	<div className="text-xs text-gray-500 mt-2">
+																		📅{" "}
+																		{new Date(
+																			task.deadline,
+																		).toLocaleDateString()}
+																	</div>
+																)}
+															</div>
+														)}
+													</Draggable>
+												))}
+												{provided.placeholder}
+											</div>
+										)}
+									</Droppable>
+								</div>
+							))}
+						</div>
+					</DragDropContext>
+				)}
+			</div>
+		</div>
 	);
 }

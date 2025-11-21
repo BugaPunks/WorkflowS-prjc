@@ -45,7 +45,7 @@ function ShellContent({
 						type="button"
 						onClick={() => setOpenMobile(true)}
 						className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-md"
-                        aria-label="Abrir menú"
+						aria-label="Abrir menú"
 					>
 						<Menu size={24} />
 					</button>
