@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { loginViaApi } from "./utils/api-auth";
 
 test.describe("Document Management & Versioning", () => {
-	test.skip("Should upload file and handle versioning", async ({
+	test("Should upload file and handle versioning", async ({
 		page,
 		request,
 	}) => {

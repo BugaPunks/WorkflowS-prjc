@@ -39,7 +39,7 @@ router.get("/:projectId", async (req, res) => {
 			};
 		});
 
-		res.json(result);
+		res.json({ data: result });
 	} catch (_error) {
 		res.status(500).json({ error: "Error al obtener documentos" });
 	}
@@ -140,7 +140,7 @@ router.get("/:id/versions", async (req, res) => {
 			orderBy: { version: "desc" },
 		});
 
-		res.json(history);
+		res.json({ data: history });
 	} catch (_error) {
 		res.status(500).json({ error: "Error al obtener versiones" });
 	}
