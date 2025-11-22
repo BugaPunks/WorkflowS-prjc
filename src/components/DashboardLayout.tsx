@@ -26,9 +26,11 @@ export const DashboardLayout = () => {
 		: undefined;
 
 	return (
-		<AppShell user={userForShell}>
-			<Outlet />
+		<>
+			<AppShell user={userForShell}>
+				<Outlet />
+			</AppShell>
 			<ChatWidget />
-		</AppShell>
+		</>
 	);
 };
