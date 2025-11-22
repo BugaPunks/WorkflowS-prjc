@@ -1,15 +1,9 @@
-import {
-	ArrowRight,
-	Calendar,
-	FolderOpen,
-	Plus,
-	Trash2,
-	X,
-} from "lucide-react";
+import { ArrowRight, Calendar, FolderOpen, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { projectAPI } from "@/api/client";
 import { Button } from "@/components/Button";
+import { Modal } from "@/components/Modal";
 import { useSession } from "@/hooks/useSession";
 import { cn } from "@/lib/utils";
 
@@ -245,124 +239,105 @@ export default function Projects() {
 			)}
 
 			{/* Modal */}
-			{showModal && canCreateProject && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-					<button
-						type="button"
-						className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity w-full h-full cursor-default"
-						onClick={() => setShowModal(false)}
-						aria-label="Close modal"
-					/>
-					<div className="bg-white rounded-xl shadow-2xl w-full max-w-md relative overflow-hidden animate-in zoom-in-95 duration-200">
-						<div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-							<h3 className="text-lg font-semibold text-gray-900">
-								Nuevo Proyecto
-							</h3>
-							<button
-								type="button"
-								onClick={() => setShowModal(false)}
-								className="text-gray-400 hover:text-gray-600 transition-colors"
+			<Modal
+				isOpen={showModal && canCreateProject}
+				onClose={() => setShowModal(false)}
+				title="Nuevo Proyecto"
+			>
+				<form onSubmit={handleCreateProject}>
+					<div className="space-y-4">
+						<div>
+							<label
+								htmlFor="project-name"
+								className="block text-sm font-medium text-gray-700 mb-1.5"
 							>
-								<X size={20} />
-							</button>
+								Nombre del proyecto
+							</label>
+							<input
+								id="project-name"
+								name="name"
+								type="text"
+								value={formData.name}
+								onChange={(e) =>
+									setFormData({ ...formData, name: e.target.value })
+								}
+								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
+								placeholder="Ej. Sistema de Gestión..."
+								required
+							/>
 						</div>
-
-						<form onSubmit={handleCreateProject} className="p-6">
-							<div className="space-y-4">
-								<div>
-									<label
-										htmlFor="project-name"
-										className="block text-sm font-medium text-gray-700 mb-1.5"
-									>
-										Nombre del proyecto
-									</label>
-									<input
-										id="project-name"
-										name="name"
-										type="text"
-										value={formData.name}
-										onChange={(e) =>
-											setFormData({ ...formData, name: e.target.value })
-										}
-										className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm"
-										placeholder="Ej. Sistema de Gestión..."
-										required
-									/>
-								</div>
-								<div>
-									<label
-										htmlFor="project-desc"
-										className="block text-sm font-medium text-gray-700 mb-1.5"
-									>
-										Descripción
-									</label>
-									<textarea
-										id="project-desc"
-										name="description"
-										value={formData.description}
-										onChange={(e) =>
-											setFormData({ ...formData, description: e.target.value })
-										}
-										className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm resize-none"
-										placeholder="Breve descripción del proyecto..."
-										rows={3}
-									/>
-								</div>
-								<div className="grid grid-cols-2 gap-4">
-									<div>
-										<label
-											htmlFor="start-date"
-											className="block text-sm font-medium text-gray-700 mb-1.5"
-										>
-											Inicio
-										</label>
-										<input
-											id="start-date"
-											type="date"
-											value={formData.startDate}
-											onChange={(e) =>
-												setFormData({ ...formData, startDate: e.target.value })
-											}
-											className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm text-gray-600"
-										/>
-									</div>
-									<div>
-										<label
-											htmlFor="end-date"
-											className="block text-sm font-medium text-gray-700 mb-1.5"
-										>
-											Fin
-										</label>
-										<input
-											id="end-date"
-											type="date"
-											value={formData.endDate}
-											onChange={(e) =>
-												setFormData({ ...formData, endDate: e.target.value })
-											}
-											className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm text-gray-600"
-										/>
-									</div>
-								</div>
-							</div>
-
-							<div className="flex gap-3 mt-8">
-								<Button
-									type="button"
-									onClick={() => setShowModal(false)}
-									variant="default"
-									className="flex-1"
+						<div>
+							<label
+								htmlFor="project-desc"
+								className="block text-sm font-medium text-gray-700 mb-1.5"
+							>
+								Descripción
+							</label>
+							<textarea
+								id="project-desc"
+								name="description"
+								value={formData.description}
+								onChange={(e) =>
+									setFormData({ ...formData, description: e.target.value })
+								}
+								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm resize-none"
+								placeholder="Breve descripción del proyecto..."
+								rows={3}
+							/>
+						</div>
+						<div className="grid grid-cols-2 gap-4">
+							<div>
+								<label
+									htmlFor="start-date"
+									className="block text-sm font-medium text-gray-700 mb-1.5"
 								>
-									Cancelar
-								</Button>
-								<Button type="submit" variant="primary" className="flex-1">
-									Crear Proyecto
-								</Button>
+									Inicio
+								</label>
+								<input
+									id="start-date"
+									type="date"
+									value={formData.startDate}
+									onChange={(e) =>
+										setFormData({ ...formData, startDate: e.target.value })
+									}
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm text-gray-600"
+								/>
 							</div>
-						</form>
+							<div>
+								<label
+									htmlFor="end-date"
+									className="block text-sm font-medium text-gray-700 mb-1.5"
+								>
+									Fin
+								</label>
+								<input
+									id="end-date"
+									type="date"
+									value={formData.endDate}
+									onChange={(e) =>
+										setFormData({ ...formData, endDate: e.target.value })
+									}
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm text-gray-600"
+								/>
+							</div>
+						</div>
 					</div>
-				</div>
-			)}
+
+					<div className="flex gap-3 mt-8">
+						<Button
+							type="button"
+							onClick={() => setShowModal(false)}
+							variant="default"
+							className="flex-1"
+						>
+							Cancelar
+						</Button>
+						<Button type="submit" variant="primary" className="flex-1">
+							Crear Proyecto
+						</Button>
+					</div>
+				</form>
+			</Modal>
 		</div>
 	);
 }

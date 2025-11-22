@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { projectAPI } from "@/api/client";
+import { Modal } from "@/components/Modal";
 import { useSession } from "@/hooks/useSession";
 
 interface UserStory {
@@ -220,132 +221,129 @@ export default function UserStories() {
 			)}
 
 			{/* Modal */}
-			{showModal && (
-				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-					<div className="bg-white rounded-lg p-8 w-full max-w-md">
-						<h3 className="text-2xl font-bold text-gray-900 mb-6">
-							Crear Nueva Historia
-						</h3>
-						<form onSubmit={handleCreateStory}>
-							<div className="mb-4">
-								<label
-									htmlFor="story-project"
-									className="block text-sm font-medium text-gray-700 mb-2"
-								>
-									Proyecto
-								</label>
-								<select
-									id="story-project"
-									value={formData.projectId}
-									onChange={(e) =>
-										setFormData({ ...formData, projectId: e.target.value })
-									}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-									required
-								>
-									<option value="">Selecciona un proyecto</option>
-									{projects.map((p) => (
-										<option key={p.id} value={p.id}>
-											{p.name}
-										</option>
-									))}
-								</select>
-							</div>
-							<div className="mb-4">
-								<label
-									htmlFor="story-title"
-									className="block text-sm font-medium text-gray-700 mb-2"
-								>
-									Título
-								</label>
-								<input
-									id="story-title"
-									type="text"
-									value={formData.title}
-									onChange={(e) =>
-										setFormData({ ...formData, title: e.target.value })
-									}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder="Como usuario... quiero..."
-									required
-								/>
-							</div>
-							<div className="mb-4">
-								<label
-									htmlFor="story-desc"
-									className="block text-sm font-medium text-gray-700 mb-2"
-								>
-									Descripción
-								</label>
-								<textarea
-									id="story-desc"
-									value={formData.description}
-									onChange={(e) =>
-										setFormData({ ...formData, description: e.target.value })
-									}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder="Criterios de aceptación..."
-									rows={3}
-								/>
-							</div>
-							<div className="mb-4">
-								<label
-									htmlFor="story-acceptance"
-									className="block text-sm font-medium text-gray-700 mb-2"
-								>
-									Criterios de Aceptación
-								</label>
-								<textarea
-									id="story-acceptance"
-									value={formData.acceptance}
-									onChange={(e) =>
-										setFormData({ ...formData, acceptance: e.target.value })
-									}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder="Dado que... cuando... entonces..."
-									rows={3}
-								/>
-							</div>
-							<div className="mb-6">
-								<label
-									htmlFor="story-priority"
-									className="block text-sm font-medium text-gray-700 mb-2"
-								>
-									Prioridad
-								</label>
-								<select
-									id="story-priority"
-									value={formData.priority}
-									onChange={(e) =>
-										setFormData({ ...formData, priority: e.target.value })
-									}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-								>
-									<option value="LOW">Baja</option>
-									<option value="MEDIUM">Media</option>
-									<option value="HIGH">Alta</option>
-									<option value="CRITICAL">Crítica</option>
-								</select>
-							</div>
-							<div className="flex gap-3">
-								<button
-									type="button"
-									onClick={() => setShowModal(false)}
-									className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium"
-								>
-									Cancelar
-								</button>
-								<button
-									type="submit"
-									className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-								>
-									Crear
-								</button>
-							</div>
-						</form>
+			<Modal
+				isOpen={showModal}
+				onClose={() => setShowModal(false)}
+				title="Crear Nueva Historia"
+			>
+				<form onSubmit={handleCreateStory}>
+					<div className="mb-4">
+						<label
+							htmlFor="story-project"
+							className="block text-sm font-medium text-gray-700 mb-2"
+						>
+							Proyecto
+						</label>
+						<select
+							id="story-project"
+							value={formData.projectId}
+							onChange={(e) =>
+								setFormData({ ...formData, projectId: e.target.value })
+							}
+							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+							required
+						>
+							<option value="">Selecciona un proyecto</option>
+							{projects.map((p) => (
+								<option key={p.id} value={p.id}>
+									{p.name}
+								</option>
+							))}
+						</select>
 					</div>
-				</div>
-			)}
+					<div className="mb-4">
+						<label
+							htmlFor="story-title"
+							className="block text-sm font-medium text-gray-700 mb-2"
+						>
+							Título
+						</label>
+						<input
+							id="story-title"
+							type="text"
+							value={formData.title}
+							onChange={(e) =>
+								setFormData({ ...formData, title: e.target.value })
+							}
+							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+							placeholder="Como usuario... quiero..."
+							required
+						/>
+					</div>
+					<div className="mb-4">
+						<label
+							htmlFor="story-desc"
+							className="block text-sm font-medium text-gray-700 mb-2"
+						>
+							Descripción
+						</label>
+						<textarea
+							id="story-desc"
+							value={formData.description}
+							onChange={(e) =>
+								setFormData({ ...formData, description: e.target.value })
+							}
+							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+							placeholder="Criterios de aceptación..."
+							rows={3}
+						/>
+					</div>
+					<div className="mb-4">
+						<label
+							htmlFor="story-acceptance"
+							className="block text-sm font-medium text-gray-700 mb-2"
+						>
+							Criterios de Aceptación
+						</label>
+						<textarea
+							id="story-acceptance"
+							value={formData.acceptance}
+							onChange={(e) =>
+								setFormData({ ...formData, acceptance: e.target.value })
+							}
+							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+							placeholder="Dado que... cuando... entonces..."
+							rows={3}
+						/>
+					</div>
+					<div className="mb-6">
+						<label
+							htmlFor="story-priority"
+							className="block text-sm font-medium text-gray-700 mb-2"
+						>
+							Prioridad
+						</label>
+						<select
+							id="story-priority"
+							value={formData.priority}
+							onChange={(e) =>
+								setFormData({ ...formData, priority: e.target.value })
+							}
+							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+						>
+							<option value="LOW">Baja</option>
+							<option value="MEDIUM">Media</option>
+							<option value="HIGH">Alta</option>
+							<option value="CRITICAL">Crítica</option>
+						</select>
+					</div>
+					<div className="flex gap-3">
+						<button
+							type="button"
+							onClick={() => setShowModal(false)}
+							className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium"
+						>
+							Cancelar
+						</button>
+						<button
+							type="submit"
+							className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+						>
+							Crear
+						</button>
+					</div>
+				</form>
+			</Modal>
 		</div>
 	);
 }

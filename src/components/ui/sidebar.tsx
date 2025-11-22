@@ -35,7 +35,7 @@ export function Sidebar({
 	if (isMobile) {
 		return (
 			<div
-				className={`${openMobile ? "block" : "hidden"} fixed inset-0 z-50 bg-black bg-opacity-50`}
+				className={`${openMobile ? "block" : "hidden"} fixed inset-0 z-50 bg-gray-900/60 backdrop-blur-sm`}
 				onClick={() => setOpenMobile(false)}
 				onKeyDown={(e) => {
 					if (e.key === "Escape") {

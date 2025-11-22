@@ -6,6 +6,7 @@ import {
 } from "@hello-pangea/dnd";
 import { useCallback, useEffect, useState } from "react";
 import { projectAPI, taskAPI } from "@/api/client";
+import { Modal } from "@/components/Modal";
 import { useSession } from "@/hooks/useSession";
 
 interface Task {
@@ -256,110 +257,107 @@ export default function Tasks() {
 			)}
 
 			{/* Modal */}
-			{showModal && (
-				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-					<div className="bg-white rounded-lg p-8 w-full max-w-md">
-						<h3 className="text-2xl font-bold text-gray-900 mb-6">
-							Crear Nueva Tarea
-						</h3>
-						<form onSubmit={handleCreateTask}>
-							<div className="mb-4">
-								<label
-									htmlFor="task-title"
-									className="block text-sm font-medium text-gray-700 mb-2"
-								>
-									Título
-								</label>
-								<input
-									id="task-title"
-									type="text"
-									value={formData.title}
-									onChange={(e) =>
-										setFormData({ ...formData, title: e.target.value })
-									}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder="Título de la tarea"
-									required
-								/>
-							</div>
-							<div className="mb-4">
-								<label
-									htmlFor="task-project"
-									className="block text-sm font-medium text-gray-700 mb-2"
-								>
-									Proyecto
-								</label>
-								<select
-									id="task-project"
-									value={formData.projectId}
-									onChange={(e) =>
-										setFormData({ ...formData, projectId: e.target.value })
-									}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-									required
-								>
-									<option value="">Selecciona un proyecto</option>
-									{projects.map((p) => (
-										<option key={p.id} value={p.id}>
-											{p.name}
-										</option>
-									))}
-								</select>
-							</div>
-							<div className="mb-4">
-								<label
-									htmlFor="task-desc"
-									className="block text-sm font-medium text-gray-700 mb-2"
-								>
-									Descripción
-								</label>
-								<textarea
-									id="task-desc"
-									value={formData.description}
-									onChange={(e) =>
-										setFormData({ ...formData, description: e.target.value })
-									}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder="Descripción de la tarea"
-									rows={4}
-								/>
-							</div>
-							<div className="mb-6">
-								<label
-									htmlFor="task-deadline"
-									className="block text-sm font-medium text-gray-700 mb-2"
-								>
-									Vencimiento
-								</label>
-								<input
-									id="task-deadline"
-									type="date"
-									value={formData.deadline}
-									onChange={(e) =>
-										setFormData({ ...formData, deadline: e.target.value })
-									}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-								/>
-							</div>
-							<div className="flex gap-3">
-								<button
-									type="button"
-									onClick={() => setShowModal(false)}
-									className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium"
-								>
-									Cancelar
-								</button>
-								<button
-									type="submit"
-									className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-								>
-									Crear
-								</button>
-							</div>
-						</form>
+			<Modal
+				isOpen={showModal}
+				onClose={() => setShowModal(false)}
+				title="Crear Nueva Tarea"
+			>
+				<form onSubmit={handleCreateTask}>
+					<div className="mb-4">
+						<label
+							htmlFor="task-title"
+							className="block text-sm font-medium text-gray-700 mb-2"
+						>
+							Título
+						</label>
+						<input
+							id="task-title"
+							type="text"
+							value={formData.title}
+							onChange={(e) =>
+								setFormData({ ...formData, title: e.target.value })
+							}
+							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+							placeholder="Título de la tarea"
+							required
+						/>
 					</div>
-				</div>
-			)}
+					<div className="mb-4">
+						<label
+							htmlFor="task-project"
+							className="block text-sm font-medium text-gray-700 mb-2"
+						>
+							Proyecto
+						</label>
+						<select
+							id="task-project"
+							value={formData.projectId}
+							onChange={(e) =>
+								setFormData({ ...formData, projectId: e.target.value })
+							}
+							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+							required
+						>
+							<option value="">Selecciona un proyecto</option>
+							{projects.map((p) => (
+								<option key={p.id} value={p.id}>
+									{p.name}
+								</option>
+							))}
+						</select>
+					</div>
+					<div className="mb-4">
+						<label
+							htmlFor="task-desc"
+							className="block text-sm font-medium text-gray-700 mb-2"
+						>
+							Descripción
+						</label>
+						<textarea
+							id="task-desc"
+							value={formData.description}
+							onChange={(e) =>
+								setFormData({ ...formData, description: e.target.value })
+							}
+							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+							placeholder="Descripción de la tarea"
+							rows={4}
+						/>
+					</div>
+					<div className="mb-6">
+						<label
+							htmlFor="task-deadline"
+							className="block text-sm font-medium text-gray-700 mb-2"
+						>
+							Vencimiento
+						</label>
+						<input
+							id="task-deadline"
+							type="date"
+							value={formData.deadline}
+							onChange={(e) =>
+								setFormData({ ...formData, deadline: e.target.value })
+							}
+							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+						/>
+					</div>
+					<div className="flex gap-3">
+						<button
+							type="button"
+							onClick={() => setShowModal(false)}
+							className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium"
+						>
+							Cancelar
+						</button>
+						<button
+							type="submit"
+							className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+						>
+							Crear
+						</button>
+					</div>
+				</form>
+			</Modal>
 		</div>
 	);
 }

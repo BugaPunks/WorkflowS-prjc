@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Modal } from "@/components/Modal";
 import type { UserRole } from "@/models/user";
 
 interface User {
@@ -249,135 +250,132 @@ export default function UserManagement() {
 			)}
 
 			{/* Create/Edit Modal */}
-			{showModal && (
-				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-					<div className="bg-white rounded-lg p-8 w-full max-w-md">
-						<h3 className="text-2xl font-bold text-gray-900 mb-6">
-							{isEditing ? "Editar Usuario" : "Nuevo Usuario"}
-						</h3>
-						<form onSubmit={handleSave} className="space-y-4">
-							<div>
-								<label
-									htmlFor="edit-name"
-									className="block text-sm font-medium text-gray-700 mb-2"
-								>
-									Nombre
-								</label>
-								<input
-									id="edit-name"
-									type="text"
-									value={formData.name}
-									onChange={(e) =>
-										setFormData({ ...formData, name: e.target.value })
-									}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-									required
-								/>
-							</div>
-							<div>
-								<label
-									htmlFor="edit-email"
-									className="block text-sm font-medium text-gray-700 mb-2"
-								>
-									Email
-								</label>
-								<input
-									id="edit-email"
-									type="email"
-									value={formData.email}
-									onChange={(e) =>
-										setFormData({ ...formData, email: e.target.value })
-									}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-									required
-									disabled={isEditing} // Disable email on edit to prevent identity change issues if desired, or keep enabled
-								/>
-							</div>
-							<div>
-								<label
-									htmlFor="edit-password"
-									className="block text-sm font-medium text-gray-700 mb-2"
-								>
-									Contraseña {isEditing && "(Opcional)"}
-								</label>
-								<input
-									id="edit-password"
-									type="password"
-									value={formData.password}
-									onChange={(e) =>
-										setFormData({ ...formData, password: e.target.value })
-									}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder={
-										isEditing
-											? "Dejar en blanco para mantener la actual"
-											: "Mínimo 6 caracteres"
-									}
-									required={!isEditing}
-									minLength={isEditing ? undefined : 6}
-								/>
-							</div>
-							<div>
-								<label
-									htmlFor="edit-role"
-									className="block text-sm font-medium text-gray-700 mb-2"
-								>
-									Rol
-								</label>
-								<select
-									id="edit-role"
-									value={formData.role}
-									onChange={(e) =>
-										setFormData({
-											...formData,
-											role: e.target.value as UserRole,
-										})
-									}
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-								>
-									<option value="ADMIN">Administrador</option>
-									<option value="PRODUCT_OWNER">Product Owner</option>
-									<option value="SCRUM_MASTER">Scrum Master</option>
-									<option value="TEAM_DEVELOPER">Team Developer</option>
-								</select>
-							</div>
-							{isEditing && (
-								<div>
-									<label className="flex items-center">
-										<input
-											type="checkbox"
-											checked={formData.active}
-											onChange={(e) =>
-												setFormData({ ...formData, active: e.target.checked })
-											}
-											className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-										/>
-										<span className="ml-2 text-sm text-gray-700">
-											Usuario activo
-										</span>
-									</label>
-								</div>
-							)}
-
-							<div className="flex gap-3 mt-6">
-								<button
-									type="button"
-									onClick={() => setShowModal(false)}
-									className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium"
-								>
-									Cancelar
-								</button>
-								<button
-									type="submit"
-									className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-								>
-									{isEditing ? "Guardar" : "Crear"}
-								</button>
-							</div>
-						</form>
+			<Modal
+				isOpen={showModal}
+				onClose={() => setShowModal(false)}
+				title={isEditing ? "Editar Usuario" : "Nuevo Usuario"}
+			>
+				<form onSubmit={handleSave} className="space-y-4">
+					<div>
+						<label
+							htmlFor="edit-name"
+							className="block text-sm font-medium text-gray-700 mb-2"
+						>
+							Nombre
+						</label>
+						<input
+							id="edit-name"
+							type="text"
+							value={formData.name}
+							onChange={(e) =>
+								setFormData({ ...formData, name: e.target.value })
+							}
+							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+							required
+						/>
 					</div>
-				</div>
-			)}
+					<div>
+						<label
+							htmlFor="edit-email"
+							className="block text-sm font-medium text-gray-700 mb-2"
+						>
+							Email
+						</label>
+						<input
+							id="edit-email"
+							type="email"
+							value={formData.email}
+							onChange={(e) =>
+								setFormData({ ...formData, email: e.target.value })
+							}
+							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+							required
+							disabled={isEditing} // Disable email on edit to prevent identity change issues if desired, or keep enabled
+						/>
+					</div>
+					<div>
+						<label
+							htmlFor="edit-password"
+							className="block text-sm font-medium text-gray-700 mb-2"
+						>
+							Contraseña {isEditing && "(Opcional)"}
+						</label>
+						<input
+							id="edit-password"
+							type="password"
+							value={formData.password}
+							onChange={(e) =>
+								setFormData({ ...formData, password: e.target.value })
+							}
+							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+							placeholder={
+								isEditing
+									? "Dejar en blanco para mantener la actual"
+									: "Mínimo 6 caracteres"
+							}
+							required={!isEditing}
+							minLength={isEditing ? undefined : 6}
+						/>
+					</div>
+					<div>
+						<label
+							htmlFor="edit-role"
+							className="block text-sm font-medium text-gray-700 mb-2"
+						>
+							Rol
+						</label>
+						<select
+							id="edit-role"
+							value={formData.role}
+							onChange={(e) =>
+								setFormData({
+									...formData,
+									role: e.target.value as UserRole,
+								})
+							}
+							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+						>
+							<option value="ADMIN">Administrador</option>
+							<option value="PRODUCT_OWNER">Product Owner</option>
+							<option value="SCRUM_MASTER">Scrum Master</option>
+							<option value="TEAM_DEVELOPER">Team Developer</option>
+						</select>
+					</div>
+					{isEditing && (
+						<div>
+							<label className="flex items-center">
+								<input
+									type="checkbox"
+									checked={formData.active}
+									onChange={(e) =>
+										setFormData({ ...formData, active: e.target.checked })
+									}
+									className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+								/>
+								<span className="ml-2 text-sm text-gray-700">
+									Usuario activo
+								</span>
+							</label>
+						</div>
+					)}
+
+					<div className="flex gap-3 mt-6">
+						<button
+							type="button"
+							onClick={() => setShowModal(false)}
+							className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium"
+						>
+							Cancelar
+						</button>
+						<button
+							type="submit"
+							className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+						>
+							{isEditing ? "Guardar" : "Crear"}
+						</button>
+					</div>
+				</form>
+			</Modal>
 		</div>
 	);
 }
