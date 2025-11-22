@@ -26,8 +26,9 @@ export default function Sidebar({ isOpen, user, onClose }: SidebarProps) {
 	const ADMIN_MENU = [
 		{ label: "Proyectos", href: "/projects", icon: LayoutDashboard },
 		{ label: "Sprints", href: "/sprints", icon: Rocket },
-		{ label: "Tareas", href: "/tasks", icon: CheckSquare },
+		{ label: "Rúbricas", href: "/rubrics", icon: BookOpen },
 		{ label: "Historias", href: "/user-stories", icon: BookOpen },
+		{ label: "Gestión de Usuarios", href: "/user-management", icon: User },
 		{ label: "Reportes", href: "/reports", icon: BarChart3 },
 		{ label: "Evaluaciones", href: "/evaluations", icon: Star },
 		{ label: "Calendario", href: "/calendar", icon: Calendar },

@@ -62,7 +62,7 @@ export default function Tasks() {
 	const loadProjects = useCallback(async (userId?: string) => {
 		try {
 			const projectsData = await projectAPI.getAll({ memberId: userId });
-			setProjects(projectsData || []);
+			setProjects(Array.isArray(projectsData) ? projectsData : []);
 		} catch (err) {
 			console.error("Error al cargar proyectos para el selector:", err);
 		}

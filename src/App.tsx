@@ -15,9 +15,11 @@ import Evaluations from "@/pages/Evaluations";
 import ProjectDetail from "@/pages/ProjectDetail";
 import Projects from "@/pages/Projects";
 import Reports from "@/pages/Reports";
+import Rubrics from "@/pages/Rubrics";
 import SprintDetail from "@/pages/SprintDetail";
 import Sprints from "@/pages/Sprints";
 import Tasks from "@/pages/Tasks";
+import UserManagement from "@/pages/UserManagement";
 import UserStories from "@/pages/UserStories";
 
 const App = () => {
@@ -38,6 +40,8 @@ const App = () => {
 						<Route path="/sprints/:id" element={<SprintDetail />} />
 						<Route path="/tasks" element={<Tasks />} />
 						<Route path="/user-stories" element={<UserStories />} />
+						<Route path="/rubrics" element={<Rubrics />} />
+						<Route path="/user-management" element={<UserManagement />} />
 						<Route path="/reports" element={<Reports />} />
 						<Route path="/evaluations" element={<Evaluations />} />
 						<Route path="/calendar" element={<Calendar />} />
