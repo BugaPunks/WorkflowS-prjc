@@ -1,6 +1,7 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useSession } from "@/hooks/useSession";
 import { AppShell } from "./AppShell";
+import { ChatWidget } from "./ChatWidget";
 
 export const DashboardLayout = () => {
 	const { session, isAuthenticated, loading } = useSession();
@@ -27,6 +28,7 @@ export const DashboardLayout = () => {
 	return (
 		<AppShell user={userForShell}>
 			<Outlet />
+			<ChatWidget />
 		</AppShell>
 	);
 };

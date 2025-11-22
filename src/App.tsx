@@ -13,7 +13,6 @@ import { SessionProvider } from "@/hooks/useSession";
 import Calendar from "@/pages/Calendar";
 import Evaluations from "@/pages/Evaluations";
 import GradingView from "@/pages/GradingView";
-import Messages from "@/pages/Messages";
 import ProjectDetail from "@/pages/ProjectDetail";
 import Projects from "@/pages/Projects";
 import Reports from "@/pages/Reports";
@@ -63,7 +62,6 @@ const App = () => {
 						<Route path="/user-management" element={<UserManagement />} />
 						<Route path="/reports" element={<Reports />} />
 						<Route path="/evaluations" element={<Evaluations />} />
-						<Route path="/messages" element={<Messages />} />
 						<Route path="/calendar" element={<Calendar />} />
 					</Route>
 
