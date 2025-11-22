@@ -74,7 +74,9 @@ export default function Rubrics() {
 			if (projectId) {
 				// Filter to show only project specific rubrics in the project section
 				const allRubrics = data.data || [];
-				const projectRubrics = allRubrics.filter((r: Rubric) => r.projectId === projectId);
+				const projectRubrics = allRubrics.filter(
+					(r: Rubric) => r.projectId === projectId,
+				);
 				setRubrics(projectRubrics);
 			} else {
 				setGlobalRubrics(data.data || []);
@@ -301,6 +303,7 @@ export default function Rubrics() {
 					<div className="bg-gray-50 rounded-lg p-8 text-center border border-dashed border-gray-300">
 						<p className="text-gray-500">No hay rúbricas globales definidas.</p>
 						<button
+							type="button"
 							onClick={() => openCreateModal(false)}
 							className="text-blue-600 hover:underline mt-2 text-sm"
 						>
@@ -386,6 +389,7 @@ export default function Rubrics() {
 								{isEditing ? "Editar Rúbrica" : "Crear Nueva Rúbrica"}
 							</h3>
 							<button
+								type="button"
 								onClick={() => setShowModal(false)}
 								className="text-gray-400 hover:text-gray-600"
 							>

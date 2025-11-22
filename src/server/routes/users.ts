@@ -77,7 +77,7 @@ router.put("/:id", async (req, res) => {
 
 		// Use 'any' to bypass strict typing for dynamic update object to allow Prisma to handle it
 		// Biome might complain about 'any', but it is necessary here unless we map fields one by one
-		const updateData: any = { ...otherData };
+		const updateData: Record<string, any> = { ...otherData };
 
 		if (password && typeof password === "string" && password.trim() !== "") {
 			updateData.password = await bcryptjs.hash(password, 10);

@@ -12,6 +12,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { SessionProvider } from "@/hooks/useSession";
 import Calendar from "@/pages/Calendar";
 import Evaluations from "@/pages/Evaluations";
+import GradingView from "@/pages/GradingView";
 import ProjectDetail from "@/pages/ProjectDetail";
 import Projects from "@/pages/Projects";
 import Reports from "@/pages/Reports";
@@ -19,7 +20,6 @@ import Rubrics from "@/pages/Rubrics";
 import SprintDetail from "@/pages/SprintDetail";
 import Sprints from "@/pages/Sprints";
 import TaskDetail from "@/pages/TaskDetail";
-import TaskGrading from "@/pages/TaskGrading";
 import Tasks from "@/pages/Tasks";
 import UserManagement from "@/pages/UserManagement";
 import UserStories from "@/pages/UserStories";
@@ -41,10 +41,21 @@ const App = () => {
 						<Route path="/sprints" element={<Sprints />} />
 						<Route path="/sprints/:id" element={<SprintDetail />} />
 						<Route path="/tasks" element={<Tasks />} />
-						<Route path="/projects/:projectId/tasks/:taskId" element={<TaskDetail />} />
+						<Route
+							path="/projects/:projectId/tasks/:taskId"
+							element={<TaskDetail />}
+						/>
 						<Route
 							path="/projects/:projectId/tasks/:taskId/grade"
-							element={<TaskGrading />}
+							element={<GradingView />}
+						/>
+						<Route
+							path="/projects/:projectId/sprints/:sprintId/grade"
+							element={<GradingView />}
+						/>
+						<Route
+							path="/projects/:projectId/grade"
+							element={<GradingView />}
 						/>
 						<Route path="/user-stories" element={<UserStories />} />
 						<Route path="/rubrics" element={<Rubrics />} />

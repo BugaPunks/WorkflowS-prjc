@@ -2,11 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSession } from "@/hooks/useSession";
 
-interface Task {
+// Generic type for what we are grading
+interface TargetEntity {
 	id: string;
-	title: string;
-	description: string;
-	status: string;
+	title: string; // For Task/Sprint
+	name?: string; // For Sprint/Project (will normalize to title)
+	description: string | null;
+	status?: string;
 	assignee?: {
 		id: string;
 		name: string;
@@ -34,15 +36,17 @@ interface Score {
 	comment: string;
 }
 
-export default function TaskGrading() {
-	const { projectId, taskId } = useParams<{
+export default function GradingView() {
+	// Allow params for Task, Sprint, or just Project
+	const { projectId, taskId, sprintId } = useParams<{
 		projectId: string;
-		taskId: string;
+		taskId?: string;
+		sprintId?: string;
 	}>();
 	const navigate = useNavigate();
 	const { session: user } = useSession();
 
-	const [task, setTask] = useState<Task | null>(null);
+	const [target, setTarget] = useState<TargetEntity | null>(null);
 	const [rubrics, setRubrics] = useState<Rubric[]>([]);
 	const [selectedRubric, setSelectedRubric] = useState<Rubric | null>(null);
 	const [scores, setScores] = useState<Score[]>([]);
@@ -60,16 +64,50 @@ export default function TaskGrading() {
 	}, []);
 
 	useEffect(() => {
-		if (!taskId || !projectId) return;
+		if (!projectId) return;
 
 		const fetchData = async () => {
 			try {
 				setIsLoading(true);
-				// Fetch Task
-				const taskRes = await fetch(`/api/tasks/${taskId}`);
-				const taskData = await taskRes.json();
-				if (taskData.error) throw new Error(taskData.error);
-				setTask(taskData);
+				let targetData: TargetEntity | null = null;
+
+				if (taskId) {
+					const res = await fetch(`/api/tasks/${taskId}`);
+					const data = await res.json();
+					if (data.error) throw new Error(data.error);
+					// Normalizing task data
+					targetData = { ...data, projectId };
+				} else if (sprintId) {
+					// Fetch Sprint
+					// Assuming we have /api/sprints/:id
+					const res = await fetch(`/api/sprints/${sprintId}`);
+					// Sprint endpoint might return the object directly or wrapped
+					const data = await res.json();
+					const sprint = data.data || data;
+					if (sprint.error) throw new Error(sprint.error);
+					targetData = {
+						id: sprint.id,
+						title: sprint.name, // Normalize name to title
+						description: sprint.description,
+						status: sprint.status,
+						projectId: sprint.projectId,
+					};
+				} else {
+					// Grading Project
+					const res = await fetch(`/api/projects/${projectId}`);
+					const data = await res.json();
+					const project = data.data || data;
+					if (data.error) throw new Error(data.error);
+					targetData = {
+						id: project.id,
+						title: project.name,
+						description: project.description,
+						status: project.status,
+						projectId: project.id, // Self
+					};
+				}
+
+				setTarget(targetData);
 
 				// Fetch Project Rubrics (Global + Project Specific)
 				const rubricsRes = await fetch(`/api/rubrics?projectId=${projectId}`);
@@ -92,7 +130,7 @@ export default function TaskGrading() {
 		};
 
 		fetchData();
-	}, [taskId, projectId, initializeScores]);
+	}, [projectId, taskId, sprintId, initializeScores]);
 
 	const handleRubricChange = (rubricId: string) => {
 		const rubric = rubrics.find((r) => r.id === rubricId);
@@ -125,7 +163,7 @@ export default function TaskGrading() {
 		let weightedSum = 0;
 
 		selectedRubric.criteria.forEach((c) => {
-			const scoreEntry = scores.find(s => s.criteriaId === c.id);
+			const scoreEntry = scores.find((s) => s.criteriaId === c.id);
 			const score = scoreEntry?.score || 0;
 			// Normalize score to 0-1 ratio then multiply by weight
 			weightedSum += (score / c.maxScore) * c.weight;
@@ -137,25 +175,34 @@ export default function TaskGrading() {
 		return Math.round((weightedSum / totalWeight) * 100);
 	};
 
-	// Not used anymore as we normalize to 100
-	const calculateMaxScore = () => {
-		return 100;
-	};
-
 	const handleSubmit = async () => {
-		if (!selectedRubric || !user || !task) return;
+		if (!selectedRubric || !user || !target) return;
 
 		try {
 			setIsSaving(true);
 			const finalScore = calculateTotalScore();
-			const payload = {
+
+			interface EvaluationPayload {
+				projectId: string;
+				evaluatorId: string;
+				feedback: string;
+				criteriaScores: Score[];
+				score: number;
+				taskId?: string;
+				sprintId?: string;
+			}
+
+			const payload: EvaluationPayload = {
 				projectId,
-				taskId,
 				evaluatorId: user.id,
 				feedback: overallFeedback,
 				criteriaScores: scores,
-				score: finalScore // Send calculated total
+				score: finalScore,
 			};
+
+			if (taskId) payload.taskId = taskId;
+			if (sprintId) payload.sprintId = sprintId;
+			// If both missing, it's project level (handled by backend)
 
 			const response = await fetch("/api/evaluations", {
 				method: "POST",
@@ -166,7 +213,7 @@ export default function TaskGrading() {
 			if (!response.ok) throw new Error("Error saving evaluation");
 
 			alert("Calificación guardada exitosamente");
-			navigate(`/projects/${projectId}/tasks/${taskId}`); // Go back to task detail
+			navigate(-1); // Go back
 		} catch (error) {
 			console.error("Error saving evaluation:", error);
 			alert("Error al guardar la calificación");
@@ -183,74 +230,96 @@ export default function TaskGrading() {
 		);
 	}
 
-	if (!task) {
+	if (!target) {
 		return (
-			<div className="p-8 text-center text-red-600">Tarea no encontrada</div>
+			<div className="p-8 text-center text-red-600">Elemento no encontrado</div>
 		);
 	}
 
+	const getTypeName = () => {
+		if (taskId) return "Entrega (Tarea)";
+		if (sprintId) return "Sprint";
+		return "Proyecto Final";
+	};
+
 	return (
 		<div className="flex h-[calc(100vh-64px)] overflow-hidden">
-			{/* Left Panel: Submission Viewer */}
+			{/* Left Panel: Context Viewer */}
 			<div className="w-1/2 border-r border-gray-200 bg-gray-50 p-6 overflow-y-auto">
 				<div className="bg-white p-8 shadow-sm rounded-lg min-h-full">
 					<div className="mb-6">
 						<h1 className="text-2xl font-bold text-gray-900 mb-2">
-							Calificar Entrega
+							Calificar {getTypeName()}
 						</h1>
 						<p className="text-sm text-gray-500">
-							Proyecto: {projectId} • Entrega de:{" "}
-							<span className="font-medium text-gray-900">
-								{task.assignee?.name || "Sin asignar"}
-							</span>
+							Proyecto: {projectId}
+							{target.assignee && (
+								<>
+									{" "}
+									• Asignado a:{" "}
+									<span className="font-medium text-gray-900">
+										{target.assignee.name}
+									</span>
+								</>
+							)}
 						</p>
 					</div>
 
 					<div className="mb-8">
 						<h2 className="text-lg font-semibold text-gray-800 mb-2">
-							{task.title}
+							{target.title}
 						</h2>
 						<div className="prose prose-sm text-gray-600 bg-gray-50 p-4 rounded-lg border border-gray-100">
-							{task.description || "Sin descripción disponible."}
+							{target.description || "Sin descripción disponible."}
 						</div>
 					</div>
 
-					<div className="border-t border-gray-200 pt-6">
-						<h3 className="font-medium text-gray-900 mb-4">
-							Archivos Adjuntos
-						</h3>
-						{/* Mock Document Viewer */}
-						<div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
-							<svg
-								className="w-12 h-12 text-gray-400 mx-auto mb-4"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke="currentColor"
-								aria-label="Document Icon"
-							>
-								<title>Document Icon</title>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={2}
-									d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-								/>
-							</svg>
-							<p className="text-gray-500 font-medium">
-								Documento de la entrega.pdf
-							</p>
-							<button
-								type="button"
-								className="mt-4 text-blue-600 text-sm font-medium hover:underline"
-							>
-								Descargar Archivo
-							</button>
+					{taskId && (
+						<div className="border-t border-gray-200 pt-6">
+							<h3 className="font-medium text-gray-900 mb-4">
+								Archivos Adjuntos
+							</h3>
+							<div className="bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
+								<svg
+									className="w-12 h-12 text-gray-400 mx-auto mb-4"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									aria-label="Document Icon"
+								>
+									<title>Document Icon</title>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={2}
+										d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+									/>
+								</svg>
+								<p className="text-gray-500 font-medium">
+									Documento de la entrega.pdf
+								</p>
+								<button
+									type="button"
+									className="mt-4 text-blue-600 text-sm font-medium hover:underline"
+								>
+									Descargar Archivo
+								</button>
+							</div>
 						</div>
-						<div className="mt-6 text-sm text-gray-500 italic">
-							[Aquí se mostraría el visor de documentos integrado para ver el
-							PDF/DOCX entregado por el estudiante]
+					)}
+
+					{!taskId && (
+						<div className="border-t border-gray-200 pt-6">
+							<h3 className="font-medium text-gray-900 mb-4">
+								Resumen de Actividad
+							</h3>
+							<div className="bg-blue-50 p-4 rounded-lg text-blue-800 text-sm">
+								Aquí se mostraría un resumen automático del{" "}
+								{sprintId ? "Sprint" : "Proyecto"} (User Stories completadas,
+								Velocity, Burn-down chart, etc.) para apoyar la evaluación.
+							</div>
 						</div>
-					</div>
+					)}
 				</div>
 			</div>
 
@@ -370,9 +439,7 @@ export default function TaskGrading() {
 						<span className="text-sm text-gray-500">Calificación Final</span>
 						<span className="text-3xl font-bold text-blue-600">
 							{calculateTotalScore()}{" "}
-							<span className="text-lg text-gray-400 font-normal">
-								/ 100
-							</span>
+							<span className="text-lg text-gray-400 font-normal">/ 100</span>
 						</span>
 					</div>
 					<div className="flex gap-3">

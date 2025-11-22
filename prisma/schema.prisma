@@ -122,6 +122,7 @@ model Sprint {
   backlogItems BacklogItem[]
   tasks       Task[]
   retrospectiveItems RetrospectiveItem[]
+  evaluations Evaluation[]
 
   @@index([projectId])
   @@map("sprints")
@@ -248,7 +249,8 @@ model Criteria {
 model Evaluation {
   id          String   @id @default(cuid())
   projectId   String
-  taskId      String
+  taskId      String?
+  sprintId    String?
   evaluatorId String
   status      String   @default("PENDING") // EvaluationStatus
   feedback    String?
@@ -257,13 +259,14 @@ model Evaluation {
   updatedAt   DateTime @updatedAt
 
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  task        Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  sprint      Sprint?  @relation(fields: [sprintId], references: [id], onDelete: Cascade)
   evaluator   User     @relation(fields: [evaluatorId], references: [id])
   criteria    EvaluationCriteria[]
 
-  @@unique([taskId, evaluatorId])
   @@index([projectId])
   @@index([taskId])
+  @@index([sprintId])
   @@index([evaluatorId])
   @@map("evaluations")
 }

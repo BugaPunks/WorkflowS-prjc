@@ -847,6 +847,29 @@ export default function ProjectDetail() {
 					<div>
 						<h1 className="text-4xl font-bold text-gray-900">{project.name}</h1>
 						<p className="text-gray-600 mt-2">{project.description}</p>
+						{isProjectAdmin && (
+							<button
+								type="button"
+								onClick={() => navigate(`/projects/${project.id}/grade`)}
+								className="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+							>
+								<svg
+									className="w-4 h-4"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+								>
+									<title>Icono Calificar</title>
+									<path
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth={2}
+										d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+									/>
+								</svg>
+								Calificar Proyecto
+							</button>
+						)}
 					</div>
 					<div className="flex gap-2">
 						<button
@@ -1043,15 +1066,30 @@ export default function ProjectDetail() {
 													{new Date(sprint.endDate).toLocaleDateString()}
 												</p>
 											</div>
-											<span
-												className={`px-3 py-1 rounded-full text-xs font-bold ${
-													sprint.status === "ACTIVE"
-														? "bg-green-100 text-green-700"
-														: "bg-gray-200 text-gray-700"
-												}`}
-											>
-												{sprint.status}
-											</span>
+											<div className="flex items-center gap-3">
+												{isProjectAdmin && (
+													<button
+														type="button"
+														onClick={() =>
+															navigate(
+																`/projects/${project.id}/sprints/${sprint.id}/grade`,
+															)
+														}
+														className="text-xs text-blue-600 hover:text-blue-800 font-medium underline"
+													>
+														Calificar Sprint
+													</button>
+												)}
+												<span
+													className={`px-3 py-1 rounded-full text-xs font-bold ${
+														sprint.status === "ACTIVE"
+															? "bg-green-100 text-green-700"
+															: "bg-gray-200 text-gray-700"
+													}`}
+												>
+													{sprint.status}
+												</span>
+											</div>
 										</div>
 
 										<Droppable droppableId={`sprint-${sprint.id}`}>

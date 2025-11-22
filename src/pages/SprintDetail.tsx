@@ -6,6 +6,7 @@ import {
 } from "@hello-pangea/dnd";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useSession } from "@/hooks/useSession";
 
 interface Sprint {
 	id: string;
@@ -14,6 +15,7 @@ interface Sprint {
 	startDate: string;
 	endDate: string;
 	status: string;
+	projectId: string;
 }
 
 interface Task {
@@ -32,6 +34,7 @@ const COLUMNS = {
 export default function SprintDetail() {
 	const navigate = useNavigate();
 	const { id } = useParams<{ id: string }>();
+	const { session: user } = useSession();
 	const [sprint, setSprint] = useState<Sprint | null>(null);
 	const [tasks, setTasks] = useState<Task[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
@@ -57,13 +60,16 @@ export default function SprintDetail() {
 	}, [id]);
 
 	useEffect(() => {
-		const storedUser = localStorage.getItem("user");
-		if (!storedUser) {
+		if (user === null) {
+			// Wait for session to load
+			return;
+		}
+		if (!user) {
 			navigate("/login");
 			return;
 		}
 		loadSprint();
-	}, [navigate, loadSprint]);
+	}, [navigate, loadSprint, user]);
 
 	const getDaysRemaining = (endDate: string) => {
 		const end = new Date(endDate);
@@ -152,6 +158,34 @@ export default function SprintDetail() {
 				</button>
 				<h1 className="text-4xl font-bold text-gray-900">{sprint.name}</h1>
 				<p className="text-gray-600 mt-2">{sprint.description}</p>
+
+				{user?.role === "ADMIN" && (
+					<button
+						type="button"
+						onClick={() =>
+							navigate(
+								`/projects/${sprint.projectId}/sprints/${sprint.id}/grade`,
+							)
+						}
+						className="mt-4 flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg font-medium hover:bg-blue-100 transition-colors"
+					>
+						<svg
+							className="w-5 h-5"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+						>
+							<title>Icono Calificar</title>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								strokeWidth={2}
+								d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+							/>
+						</svg>
+						Calificar Sprint
+					</button>
+				)}
 
 				{/* Sprint Stats */}
 				<div className="flex items-center gap-6 mt-6">

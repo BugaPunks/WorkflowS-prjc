@@ -48,19 +48,72 @@ router.get("/task/:taskId", async (req, res) => {
 	}
 });
 
-// POST crear evaluación (Calificar)
+// GET evaluaciones de un sprint
+router.get("/sprint/:sprintId", async (req, res) => {
+	try {
+		const { sprintId } = req.params;
+		const evaluations = await prisma.evaluation.findMany({
+			where: { sprintId },
+			include: {
+				evaluator: {
+					select: { name: true, id: true },
+				},
+				criteria: true,
+			},
+			orderBy: { createdAt: "desc" },
+		});
+		res.json({ data: evaluations });
+	} catch (error) {
+		console.error("Error getting sprint evaluations:", error);
+		res.status(500).json({ error: "Error al obtener evaluaciones" });
+	}
+});
+
+// GET evaluaciones de un proyecto (generales, sin task ni sprint)
+router.get("/project/:projectId/general", async (req, res) => {
+	try {
+		const { projectId } = req.params;
+		const evaluations = await prisma.evaluation.findMany({
+			where: {
+				projectId,
+				taskId: null,
+				sprintId: null,
+			},
+			include: {
+				evaluator: {
+					select: { name: true, id: true },
+				},
+				criteria: true,
+			},
+			orderBy: { createdAt: "desc" },
+		});
+		res.json({ data: evaluations });
+	} catch (error) {
+		console.error("Error getting project evaluations:", error);
+		res.status(500).json({ error: "Error al obtener evaluaciones" });
+	}
+});
+
+// POST crear evaluación (Calificar Tarea, Sprint o Proyecto)
 router.post("/", async (req, res) => {
 	try {
-		const { projectId, taskId, evaluatorId, feedback, criteriaScores, score } =
-			req.body;
+		const {
+			projectId,
+			taskId,
+			sprintId,
+			evaluatorId,
+			feedback,
+			criteriaScores,
+			score,
+		} = req.body;
 
-		if (
-			!projectId ||
-			!taskId ||
-			!evaluatorId ||
-			!Array.isArray(criteriaScores)
-		) {
-			return res.status(400).json({ error: "Datos inválidos" });
+		// Validate required fields (projectId, evaluatorId are always required)
+		// At least one context (taskId, sprintId) or none (Project Level) is allowed,
+		// but if taskId is missing, sprintId might be missing too for Project Level.
+		if (!projectId || !evaluatorId || !Array.isArray(criteriaScores)) {
+			return res
+				.status(400)
+				.json({ error: "Datos inválidos: Faltan campos básicos" });
 		}
 
 		const user = await prisma.user.findUnique({ where: { id: evaluatorId } });
@@ -69,10 +122,12 @@ router.post("/", async (req, res) => {
 
 		const evaluation = await prisma.$transaction(async (tx) => {
 			// Create evaluation record
+			// taskId and sprintId are optional (can be null)
 			const evalRecord = await tx.evaluation.create({
 				data: {
 					projectId,
-					taskId,
+					taskId: taskId || null,
+					sprintId: sprintId || null,
 					evaluatorId,
 					feedback,
 					status: "COMPLETED",
@@ -91,8 +146,7 @@ router.post("/", async (req, res) => {
 				});
 			}
 
-			// Update total score on evaluation. Use provided score from frontend (normalized)
-			// or default to 0 if not provided (for backward compatibility/safety)
+			// Update total score on evaluation
 			return tx.evaluation.update({
 				where: { id: evalRecord.id },
 				data: { score: score || 0 },

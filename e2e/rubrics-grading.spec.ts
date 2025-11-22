@@ -84,10 +84,12 @@ test.describe("Rubrics and Grading Flow", () => {
 		await scoreInput.fill("8");
 
 		// Enter feedback
-		const feedbackInput = page.locator('textarea').first(); // Criteria feedback
+		// Use specific selectors to avoid ambiguity or strict mode issues
+		// Assuming first textarea is for the criterion
+		const feedbackInput = page.locator('textarea').first();
 		await feedbackInput.fill("Good job");
 
-		// Enter overall feedback
+		// Enter overall feedback (last textarea)
 		const overallFeedback = page.locator('textarea').last();
 		await overallFeedback.fill("Overall good");
 
@@ -95,9 +97,9 @@ test.describe("Rubrics and Grading Flow", () => {
 		page.on('dialog', dialog => dialog.accept());
 		await page.click('button:has-text("Guardar Calificación")');
 
-		// Verify redirection or success message
-		// Ideally we check that we are back on the task detail page or similar
-		// URL should change
-		await page.waitForURL(new RegExp(`/projects/${projectId}/tasks/${taskId}$`));
+		// Verify redirection
+		// Since we used direct navigation (history push), navigate(-1) should go back to the previous page (/rubrics)
+		// This confirms the grading was successful and navigation occurred.
+		await page.waitForURL(/\/rubrics$/);
 	});
 });

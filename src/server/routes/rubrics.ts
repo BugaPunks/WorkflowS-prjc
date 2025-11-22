@@ -31,7 +31,9 @@ router.post("/", async (req, res) => {
 		const { projectId, name, description, criteria } = req.body;
 
 		if (!name || !criteria || !Array.isArray(criteria)) {
-			return res.status(400).json({ error: "Datos inválidos: Faltan campos requeridos" });
+			return res
+				.status(400)
+				.json({ error: "Datos inválidos: Faltan campos requeridos" });
 		}
 
 		const rubric = await prisma.rubric.create({
@@ -53,9 +55,10 @@ router.post("/", async (req, res) => {
 		});
 
 		res.status(201).json({ data: rubric });
-	} catch (error: any) {
+	} catch (error) {
 		console.error("Error creating rubric:", error);
-		res.status(500).json({ error: "Error al crear rúbrica: " + error.message });
+		const message = error instanceof Error ? error.message : "Unknown error";
+		res.status(500).json({ error: `Error al crear rúbrica: ${message}` });
 	}
 });
 
@@ -121,9 +124,10 @@ router.put("/:id", async (req, res) => {
 		});
 
 		res.json({ data: updatedRubric });
-	} catch (error: any) {
+	} catch (error) {
 		console.error("Error updating rubric:", error);
-		res.status(500).json({ error: "Error al actualizar rúbrica: " + error.message });
+		const message = error instanceof Error ? error.message : "Unknown error";
+		res.status(500).json({ error: `Error al actualizar rúbrica: ${message}` });
 	}
 });
 
