@@ -79,9 +79,21 @@ router.post("/", async (req, res) => {
 // PUT actualizar user story
 router.put("/:id", async (req, res) => {
 	try {
+		const { status, ...updateData } = req.body;
+		const dataToUpdate: any = { ...updateData };
+
+		if (status) {
+			dataToUpdate.status = status;
+			if (status === "COMPLETED" || status === "DONE") {
+				dataToUpdate.completedAt = new Date();
+			} else if (status === "BACKLOG" || status === "TODO") {
+				dataToUpdate.completedAt = null;
+			}
+		}
+
 		const userStory = await prisma.userStory.update({
 			where: { id: req.params.id },
-			data: req.body,
+			data: dataToUpdate,
 		});
 		res.json({ data: userStory });
 	} catch {

@@ -100,13 +100,26 @@ router.post("/", async (req, res) => {
 // PUT actualizar tarea
 router.put("/:id", async (req, res) => {
 	try {
-		const { deadline, ...updateData } = req.body;
+		const { deadline, status, ...updateData } = req.body;
+		const dataToUpdate: any = { ...updateData };
+
+		if (deadline) dataToUpdate.deadline = new Date(deadline);
+		if (status) {
+			dataToUpdate.status = status;
+			if (status === "COMPLETED" || status === "DONE") {
+				dataToUpdate.completedAt = new Date();
+			} else if (
+				status === "TODO" ||
+				status === "IN_PROGRESS" ||
+				status === "PENDING"
+			) {
+				dataToUpdate.completedAt = null;
+			}
+		}
+
 		const task = await prisma.task.update({
 			where: { id: req.params.id },
-			data: {
-				...updateData,
-				deadline: deadline ? new Date(deadline) : undefined,
-			},
+			data: dataToUpdate,
 		});
 		res.json({ data: task });
 	} catch {

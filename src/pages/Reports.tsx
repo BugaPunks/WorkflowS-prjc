@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import {
+	Area,
 	Bar,
 	BarChart,
 	CartesianGrid,
+	ComposedChart,
 	Legend,
+	Line,
 	ResponsiveContainer,
 	Tooltip,
 	XAxis,
@@ -216,56 +219,43 @@ export default function Reports() {
 			<div className="bg-white p-6 rounded-lg shadow-md mb-8">
 				{burndownData ? (
 					<div>
-						<h2 className="text-xl font-semibold text-gray-800 mb-4">
-							Burndown Chart
-						</h2>
-						<div className="mb-2">
-							<span className="text-sm text-gray-600">
-								Puntos Totales del Sprint:{" "}
-							</span>
-							<span className="font-bold">{burndownData.totalPoints}</span>
+						<div className="flex justify-between items-center mb-4">
+							<h2 className="text-xl font-semibold text-gray-800">
+								Burndown Chart
+							</h2>
+							<div>
+								<span className="text-sm text-gray-600">Puntos Totales: </span>
+								<span className="font-bold">{burndownData.totalPoints}</span>
+							</div>
 						</div>
-						{/* Simple CSS Chart */}
-						<div className="h-64 border-l border-b border-gray-300 relative mt-8 flex items-end justify-between px-2 overflow-x-auto">
-							{burndownData.series.map((d) => (
-								<div
-									key={d.day}
-									className="relative flex flex-col items-center justify-end h-full min-w-[40px]"
-								>
-									{/* Ideal Line (Dots) */}
-									<div
-										className="absolute w-2 h-2 bg-gray-300 rounded-full z-10"
-										style={{
-											bottom: `${(d.ideal / (burndownData.totalPoints || 1)) * 100}%`,
-										}}
-										title={`Ideal: ${d.ideal.toFixed(1)}`}
+
+						<div className="h-80">
+							<ResponsiveContainer width="100%" height="100%">
+								<ComposedChart data={burndownData.series}>
+									<CartesianGrid strokeDasharray="3 3" />
+									<XAxis dataKey="date" />
+									<YAxis />
+									<Tooltip />
+									<Legend />
+									<Line
+										type="monotone"
+										dataKey="ideal"
+										stroke="#9ca3af"
+										name="Ideal (Restante)"
+										strokeDasharray="5 5"
+										strokeWidth={2}
+										dot={false}
 									/>
-									{/* Actual Bar */}
-									{d.actual !== null && (
-										<div
-											className="w-6 bg-blue-500 rounded-t opacity-80 hover:opacity-100 transition-all"
-											style={{
-												height: `${(d.actual / (burndownData.totalPoints || 1)) * 100}%`,
-											}}
-											title={`Restante: ${d.actual.toFixed(1)}`}
-										/>
-									)}
-									<span className="text-xs text-gray-500 mt-2 absolute -bottom-6 whitespace-nowrap transform -rotate-45 origin-top-left">
-										{d.date}
-									</span>
-								</div>
-							))}
-						</div>
-						<div className="h-8"></div> {/* Spacer for rotated labels */}
-						<div className="flex justify-center gap-4 mt-8 text-sm">
-							<div className="flex items-center gap-2">
-								<div className="w-3 h-3 bg-gray-300 rounded-full"></div>
-								<span>Ideal (Restante)</span>
-							</div>
-							<div className="flex items-center gap-2">
-								<div className="w-3 h-3 bg-blue-500"></div>
-								<span>Real (Restante)</span>
-							</div>
+									<Area
+										type="monotone"
+										dataKey="actual"
+										fill="#3b82f6"
+										stroke="#2563eb"
+										name="Real (Restante)"
+										fillOpacity={0.3}
+									/>
+								</ComposedChart>
+							</ResponsiveContainer>
 						</div>
 					</div>
 				) : (

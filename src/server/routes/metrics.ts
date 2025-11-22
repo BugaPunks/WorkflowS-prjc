@@ -11,11 +11,7 @@ router.get("/sprints/:sprintId/burndown", async (req, res) => {
 		const sprint = await prisma.sprint.findUnique({
 			where: { id: sprintId },
 			include: {
-				backlogItems: {
-					include: {
-						tasks: true, // We need tasks to know when they were completed
-					},
-				},
+				userStories: true,
 			},
 		});
 
@@ -24,7 +20,7 @@ router.get("/sprints/:sprintId/burndown", async (req, res) => {
 		}
 
 		// Calculate total points
-		const totalPoints = sprint.backlogItems.reduce(
+		const totalPoints = sprint.userStories.reduce(
 			(acc, item) => acc + (item.storyPoints || 0),
 			0,
 		);
@@ -44,17 +40,11 @@ router.get("/sprints/:sprintId/burndown", async (req, res) => {
 		const _remainingPoints = totalPoints;
 
 		// Map completions by day
-		// A story is "done" when its status is DONE? Or when all tasks are DONE?
-		// Let's assume BacklogItem status 'DONE' means it's burnt.
-		// But we need the DATE it was done. Prisma `updatedAt` is the best proxy we have if we don't have a history table.
-		// Or we check the tasks?
-		// Let's use BacklogItem 'updatedAt' if status is DONE or COMPLETED.
-
-		const completedItems = sprint.backlogItems
-			.filter((item) => item.status === "DONE" || item.status === "COMPLETED")
+		const completedItems = sprint.userStories
+			.filter((item) => item.completedAt !== null)
 			.map((item) => ({
 				points: item.storyPoints || 0,
-				date: new Date(item.updatedAt),
+				date: new Date(item.completedAt!),
 			}));
 
 		// Ideal decrement per day
@@ -146,18 +136,18 @@ router.get("/projects/:projectId/velocity", async (req, res) => {
 		const sprints = await prisma.sprint.findMany({
 			where: { projectId },
 			include: {
-				backlogItems: true,
+				userStories: true,
 			},
 			orderBy: { startDate: "asc" },
 		});
 
 		const velocityData = sprints.map((sprint) => {
-			const committed = sprint.backlogItems.reduce(
+			const committed = sprint.userStories.reduce(
 				(acc, item) => acc + (item.storyPoints || 0),
 				0,
 			);
-			const completed = sprint.backlogItems
-				.filter((item) => item.status === "DONE" || item.status === "COMPLETED")
+			const completed = sprint.userStories
+				.filter((item) => item.completedAt !== null)
 				.reduce((acc, item) => acc + (item.storyPoints || 0), 0);
 
 			return {

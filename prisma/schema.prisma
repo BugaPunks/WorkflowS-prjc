@@ -34,6 +34,7 @@ model User {
   userStories        UserStory[]
   backlogItems       BacklogItem[]
   messages           Message[]
+  chats              ChatParticipant[]
   projectMemberships ProjectMember[]
   notifications      Notification[]
   retrospectiveItems RetrospectiveItem[]
@@ -139,6 +140,7 @@ model UserStory {
   priority    String   @default("MEDIUM") // Priority
   storyPoints Int?
   status      String   @default("BACKLOG") // UserStoryStatus
+  completedAt DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -200,6 +202,7 @@ model Task {
   priority    String   @default("MEDIUM") // Priority
   status      String   @default("TODO") // TaskStatus
   deadline    DateTime?
+  completedAt DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -294,16 +297,29 @@ model EvaluationCriteria {
 // Chat y conversaciones
 model Chat {
   id          String   @id @default(cuid())
-  projectId   String
+  projectId   String?
   title       String?
+  type        String   @default("PROJECT") // PROJECT, DIRECT
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  project     Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
   messages    Message[]
+  participants ChatParticipant[]
 
   @@index([projectId])
   @@map("chats")
+}
+
+model ChatParticipant {
+  chatId String
+  userId String
+
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([chatId, userId])
+  @@map("chat_participants")
 }
 
 model Message {
