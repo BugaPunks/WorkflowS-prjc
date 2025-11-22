@@ -1,0 +1,80 @@
+import { test, expect } from '@playwright/test';
+import { loginViaApi } from './utils/api-auth';
+
+test.describe('Student Evaluations View', () => {
+  test('should allow student to view their grades', async ({ page, request }) => {
+    // 1. Admin Setup
+    const admin = await loginViaApi(page, request, 'admin_eval', 'ADMIN');
+
+    // Create Project
+    const projRes = await request.post('http://localhost:5000/api/projects', {
+      data: { name: 'Graded Project', description: 'Test', ownerId: admin.userId }
+    });
+    const project = (await projRes.json()).data;
+
+    // Create Student
+    const studentEmail = `student_${Date.now()}@test.com`;
+    const studentRes = await request.post('http://localhost:5000/api/auth/register', {
+      data: { name: 'Student Eval', email: studentEmail, password: 'password123', role: 'STUDENT' }
+    });
+    const student = (await studentRes.json()).user;
+
+    // Add Student to Project
+    await request.post(`http://localhost:5000/api/projects/${project.id}/members`, {
+      data: { userId: student.id, role: 'TEAM_DEVELOPER' }
+    });
+
+    // Create Task
+    const taskRes = await request.post('http://localhost:5000/api/tasks', {
+      data: {
+        title: 'Graded Task',
+        description: 'Do it',
+        projectId: project.id,
+        assigneeId: student.id,
+        status: 'COMPLETED'
+      }
+    });
+    const task = (await taskRes.json()).data;
+
+    // Grade Task (Admin)
+    // Create Rubric
+    const rubricRes = await request.post('http://localhost:5000/api/rubrics', {
+        data: {
+            name: 'Task Rubric',
+            projectId: project.id,
+            criteria: [{ name: 'Quality', maxScore: 100, weight: 1 }]
+        }
+    });
+    const rubric = (await rubricRes.json()).data;
+    const criteriaId = rubric.criteria[0].id;
+
+    // Grade it
+    await request.post('http://localhost:5000/api/evaluations', {
+        data: {
+            projectId: project.id,
+            taskId: task.id,
+            evaluatorId: admin.userId,
+            feedback: 'Great work!',
+            score: 95,
+            criteriaScores: [{ criteriaId, score: 95, comment: 'Good' }]
+        }
+    });
+
+    // 2. Student Flow
+    // Login as Student by overwriting local storage
+    await page.evaluate((user) => {
+        localStorage.setItem('user', JSON.stringify(user));
+    }, student);
+    await page.reload(); // Reload to pick up user session
+
+    // Check Sidebar link
+    await expect(page.getByRole('link', { name: 'Evaluaciones' })).toBeVisible();
+    await page.click('text=Evaluaciones');
+
+    // Verify content
+    await expect(page.getByRole('heading', { name: 'Mis Calificaciones' })).toBeVisible();
+    await expect(page.getByText('Graded Task')).toBeVisible();
+    await expect(page.getByText('95')).toBeVisible();
+    await expect(page.getByText('Great work!')).toBeVisible();
+  });
+});

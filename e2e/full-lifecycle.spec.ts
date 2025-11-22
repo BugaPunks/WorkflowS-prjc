@@ -310,56 +310,42 @@ test.describe("Full Project Lifecycle: Teacher and Student", () => {
 
 		// 3.3 Grade
 		await page
-			.locator(".p-4.rounded-lg.border") // Target specific task card
+			.locator(".bg-white") // Target specific task card (updated selector from new Evaluations.tsx)
 			.filter({ hasText: createdTaskTitle })
-			.getByRole("button", { name: "Evaluar" })
+			.getByRole("button", { name: "Ir a Calificar" })
 			.click();
 
 		await expect(
-			page.getByRole("heading", { name: "Evaluar Tarea" }),
+			page.getByRole("heading", { name: "Calificar Entrega (Tarea)" }),
 		).toBeVisible();
 
-		// Select Rubric if not selected (or verify it exists in select)
-		// The Select ID is "rubric-select" based on Evaluator.tsx
+		// Select Rubric
 		const rubricSelect = page.locator("#rubric-select");
 		await expect(rubricSelect).toBeVisible();
-		// We can try to select the first option if value is empty, or check if it has options.
-		// But the test says it should have created one.
-		// Let's select by label partial match if possible, or just first index > 0.
-		// However, Evaluator.tsx auto-selects the first one.
-		// We will verify the select has the rubric.
 		const rubricName = `Rúbrica General ${timestamp}`;
-		// Wait for option to be populated
 		await expect(
 			rubricSelect.locator(`option:has-text("${rubricName}")`),
 		).toBeAttached();
-
-		// Ensure it is selected
 		await rubricSelect.selectOption({ label: rubricName });
 
-		// Fill scores
-		await page.fill('input[max="10"]', "9"); // Funcionalidad
-		// There are two inputs with max="10" in the rubric we created?
-		// We created: Funcionalidad (10), Diseño (10).
-		// So `fill('input[max="10"]')` will match multiple.
-		// Playwright might complain about strict mode violations.
+		// Fill scores (GradingView inputs)
 		const inputs = page.locator('input[type="number"]');
 		await inputs.nth(0).fill("9");
 		await inputs.nth(1).fill("8");
 
 		// Submit
-		await page.fill("#eval-feedback", "Excelente trabajo, estudiante.");
-		await page.getByRole("button", { name: "Guardar Evaluación" }).click();
+		// GradingView uses generic feedback textarea, not id="eval-feedback"
+		await page.getByPlaceholder(/Proporcione un feedback general/).fill("Excelente trabajo, estudiante.");
 
-		// 3.4 Verify
-		// Should see "Evaluada" or score
-		await expect(page.getByText("85 / 100")).toBeVisible(); // (9*1 + 8*1) / 2 = 8.5 -> 85
-		// Wait, calculation: (9/10)*1 + (8/10)*1 = 0.9 + 0.8 = 1.7. Total Weight = 2.
-		// 1.7 / 2 = 0.85 -> 85/100.
-		// Let's just check for visibility of the card updating or the modal closing.
-		await expect(
-			page.getByRole("heading", { name: "Evaluar Tarea" }),
-		).not.toBeVisible();
+		// Handle dialog
+		page.on('dialog', dialog => dialog.accept());
+		await page.getByRole("button", { name: "Guardar Calificación" }).click();
+
+		// 3.4 Verify return to Evaluations page
+		await expect(page).toHaveURL(/\/evaluations/);
+
+		// Check that it shows as evaluated (Green check)
+		await expect(page.locator(".bg-white").filter({ hasText: createdTaskTitle }).getByText("Ya tiene 1 evaluación(es)")).toBeVisible();
 
 		// =================================================================
 		// 4. STUDENT: Retrospective & Velocity Check

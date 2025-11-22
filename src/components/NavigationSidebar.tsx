@@ -39,6 +39,7 @@ export default function Sidebar({ isOpen, user, onClose }: SidebarProps) {
 		{ label: "Sprints", href: "/sprints", icon: Rocket },
 		{ label: "Tareas", href: "/tasks", icon: CheckSquare },
 		{ label: "Historias", href: "/user-stories", icon: BookOpen },
+		{ label: "Evaluaciones", href: "/evaluations", icon: Star },
 		{ label: "Reportes", href: "/reports", icon: BarChart3 },
 		{ label: "Calendario", href: "/calendar", icon: Calendar },
 	];

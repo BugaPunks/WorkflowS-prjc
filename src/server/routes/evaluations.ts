@@ -94,6 +94,57 @@ router.get("/project/:projectId/general", async (req, res) => {
 	}
 });
 
+// GET evaluaciones de un estudiante (Tareas asignadas + Sprints/Proyectos de sus equipos)
+router.get("/student/:studentId", async (req, res) => {
+	try {
+		const { studentId } = req.params;
+
+		// 1. Evaluaciones de tareas asignadas al estudiante
+		const taskEvaluations = await prisma.evaluation.findMany({
+			where: {
+				task: { assigneeId: studentId },
+			},
+			include: {
+				project: { select: { name: true } },
+				task: { select: { title: true } },
+				sprint: { select: { name: true } },
+				evaluator: { select: { name: true } },
+			},
+		});
+
+		// 2. Evaluaciones de equipo (Sprint y Proyecto)
+		// Primero obtenemos los proyectos donde es miembro
+		const memberships = await prisma.projectMember.findMany({
+			where: { userId: studentId },
+			select: { projectId: true },
+		});
+		const projectIds = memberships.map((m) => m.projectId);
+
+		const teamEvaluations = await prisma.evaluation.findMany({
+			where: {
+				projectId: { in: projectIds },
+				taskId: null, // Excluir tareas (ya cubiertas arriba si son asignadas, o ignoradas si son de otros)
+			},
+			include: {
+				project: { select: { name: true } },
+				sprint: { select: { name: true } },
+				evaluator: { select: { name: true } },
+			},
+		});
+
+		// Combinar y ordenar por fecha más reciente
+		const allEvaluations = [...taskEvaluations, ...teamEvaluations].sort(
+			(a, b) =>
+				new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+		);
+
+		res.json({ data: allEvaluations });
+	} catch (error) {
+		console.error("Error getting student evaluations:", error);
+		res.status(500).json({ error: "Error al obtener mis calificaciones" });
+	}
+});
+
 // POST crear evaluación (Calificar Tarea, Sprint o Proyecto)
 router.post("/", async (req, res) => {
 	try {

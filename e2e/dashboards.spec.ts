@@ -17,24 +17,23 @@ test.describe("Dashboard Roles Split", () => {
 		await expect(page.getByRole("link", { name: "Reportes" })).toBeVisible();
 	});
 
-	test("Student should NOT see Evaluations in sidebar", async ({
+	test("Student SHOULD see Evaluations in sidebar", async ({
 		page,
 		request,
 	}) => {
 		// Login as Student
-		await loginViaApi(page, request, "student", "STUDENT"); // Use STUDENT role, though frontend might default to team dev logic
+		await loginViaApi(page, request, "student", "STUDENT");
 
 		await page.goto("/projects");
 
 		// Check sidebar items
-		// Assuming the sidebar logic uses role from localStorage which we injected
 		await expect(page.getByRole("link", { name: "Proyectos" })).toBeVisible();
 		await expect(
 			page.getByRole("link", { name: "Evaluaciones" }),
-		).not.toBeVisible();
+		).toBeVisible();
 
-		// Verify protection
+		// Verify access
 		await page.goto("/evaluations");
-		await expect(page.getByText("Acceso Restringido")).toBeVisible();
+		await expect(page.getByRole("heading", { name: "Mis Calificaciones" })).toBeVisible();
 	});
 });
