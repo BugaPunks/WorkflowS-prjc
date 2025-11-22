@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSession } from "@/hooks/useSession";
 
 interface LoginFormData {
 	email: string;
@@ -8,6 +9,7 @@ interface LoginFormData {
 
 export function LoginForm() {
 	const navigate = useNavigate();
+	const { login } = useSession();
 	const [formData, setFormData] = useState<LoginFormData>({
 		email: "",
 		password: "",
@@ -77,16 +79,14 @@ export function LoginForm() {
 				throw new Error(data.error || "Error al iniciar sesión");
 			}
 
-			// Guardar datos del usuario en localStorage (ideal con JWT en producción)
-			localStorage.setItem(
-				"user",
-				JSON.stringify({
-					id: data.user.id,
-					name: data.user.name,
-					email: data.user.email,
-					role: data.user.role,
-				}),
-			);
+			// Update session state
+			login({
+				id: data.user.id,
+				name: data.user.name,
+				email: data.user.email,
+				role: data.user.role,
+				password: "", // Not needed in session
+			});
 
 			// Redirigir directamente al dashboard (Proyectos)
 			navigate("/projects");

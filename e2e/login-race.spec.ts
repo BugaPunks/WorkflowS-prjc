@@ -1,0 +1,27 @@
+import { test, expect } from '@playwright/test';
+
+test.describe('Login Race Condition', () => {
+  test('should redirect to dashboard immediately after login', async ({ page, request }) => {
+    // Create user via API
+    const email = `race_${Date.now()}@test.com`;
+    const password = 'password123';
+    await request.post('http://localhost:5000/api/auth/register', {
+      data: { name: 'Race User', email, password, role: 'ADMIN' }
+    });
+
+    // Go to login
+    await page.goto('/login');
+
+    // Fill form
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', password);
+    await page.click('button[type="submit"]');
+
+    // Expect redirect to /projects without reload
+    // We expect URL to change.
+    await expect(page).toHaveURL(/\/projects/);
+
+    // Verify we are authenticated (e.g. sidebar visible)
+    await expect(page.getByRole('link', { name: 'Proyectos' })).toBeVisible();
+  });
+});

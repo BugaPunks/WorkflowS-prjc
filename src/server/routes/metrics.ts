@@ -44,7 +44,7 @@ router.get("/sprints/:sprintId/burndown", async (req, res) => {
 			.filter((item) => item.completedAt !== null)
 			.map((item) => ({
 				points: item.storyPoints || 0,
-				date: new Date(item.completedAt!),
+				date: new Date(item.completedAt as Date),
 			}));
 
 		// Ideal decrement per day
