@@ -10,15 +10,27 @@ interface User {
 	createdAt: string;
 }
 
+interface UserPayload {
+	name: string;
+	email: string;
+	role: UserRole;
+	active?: boolean;
+	password?: string;
+}
+
 export default function UserManagement() {
 	const [users, setUsers] = useState<User[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
-	const [editingUser, setEditingUser] = useState<User | null>(null);
-	const [editForm, setEditForm] = useState({
+	const [showModal, setShowModal] = useState(false);
+	const [isEditing, setIsEditing] = useState(false);
+	const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+	const [formData, setFormData] = useState({
 		name: "",
 		email: "",
 		role: "TEAM_DEVELOPER" as UserRole,
 		active: true,
+		password: "",
 	});
 
 	const loadUsers = useCallback(async () => {
@@ -38,33 +50,73 @@ export default function UserManagement() {
 		loadUsers();
 	}, [loadUsers]);
 
-	const handleEdit = (user: User) => {
-		setEditingUser(user);
-		setEditForm({
+	const openCreateModal = () => {
+		setIsEditing(false);
+		setCurrentUserId(null);
+		setFormData({
+			name: "",
+			email: "",
+			role: "TEAM_DEVELOPER",
+			active: true,
+			password: "",
+		});
+		setShowModal(true);
+	};
+
+	const openEditModal = (user: User) => {
+		setIsEditing(true);
+		setCurrentUserId(user.id);
+		setFormData({
 			name: user.name,
 			email: user.email,
 			role: user.role,
 			active: user.active,
+			password: "", // Reset password field
 		});
+		setShowModal(true);
 	};
 
-	const handleSave = async () => {
-		if (!editingUser) return;
+	const handleSave = async (e: React.FormEvent) => {
+		e.preventDefault();
 
 		try {
-			const response = await fetch(`/api/users/${editingUser.id}`, {
-				method: "PUT",
+			const url = isEditing ? `/api/users/${currentUserId}` : "/api/users";
+			const method = isEditing ? "PUT" : "POST";
+
+			const body: UserPayload = {
+				name: formData.name,
+				email: formData.email,
+				role: formData.role,
+			};
+
+			if (isEditing) {
+				body.active = formData.active;
+				if (formData.password && formData.password.trim() !== "") {
+					body.password = formData.password;
+				}
+			} else {
+				// Creating
+				body.password = formData.password;
+			}
+
+			const response = await fetch(url, {
+				method: method,
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(editForm),
+				body: JSON.stringify(body),
 			});
 
-			if (!response.ok) throw new Error("Error updating user");
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || "Error saving user");
+			}
 
-			setEditingUser(null);
+			setShowModal(false);
 			loadUsers();
 		} catch (error) {
-			console.error("Error updating user:", error);
-			alert("Error al actualizar el usuario");
+			console.error("Error saving user:", error);
+			alert(
+				error instanceof Error ? error.message : "Error al guardar usuario",
+			);
 		}
 	};
 
@@ -104,6 +156,13 @@ export default function UserManagement() {
 						Administra los usuarios del sistema, sus roles y estado
 					</p>
 				</div>
+				<button
+					type="button"
+					onClick={openCreateModal}
+					className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium"
+				>
+					+ Nuevo Usuario
+				</button>
 			</div>
 
 			{isLoading ? (
@@ -169,7 +228,7 @@ export default function UserManagement() {
 									<td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
 										<button
 											type="button"
-											onClick={() => handleEdit(user)}
+											onClick={() => openEditModal(user)}
 											className="text-indigo-600 hover:text-indigo-900 mr-4"
 										>
 											Editar
@@ -189,14 +248,14 @@ export default function UserManagement() {
 				</div>
 			)}
 
-			{/* Edit Modal */}
-			{editingUser && (
+			{/* Create/Edit Modal */}
+			{showModal && (
 				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
 					<div className="bg-white rounded-lg p-8 w-full max-w-md">
 						<h3 className="text-2xl font-bold text-gray-900 mb-6">
-							Editar Usuario
+							{isEditing ? "Editar Usuario" : "Nuevo Usuario"}
 						</h3>
-						<div className="space-y-4">
+						<form onSubmit={handleSave} className="space-y-4">
 							<div>
 								<label
 									htmlFor="edit-name"
@@ -207,9 +266,9 @@ export default function UserManagement() {
 								<input
 									id="edit-name"
 									type="text"
-									value={editForm.name}
+									value={formData.name}
 									onChange={(e) =>
-										setEditForm({ ...editForm, name: e.target.value })
+										setFormData({ ...formData, name: e.target.value })
 									}
 									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
 									required
@@ -225,12 +284,37 @@ export default function UserManagement() {
 								<input
 									id="edit-email"
 									type="email"
-									value={editForm.email}
+									value={formData.email}
 									onChange={(e) =>
-										setEditForm({ ...editForm, email: e.target.value })
+										setFormData({ ...formData, email: e.target.value })
 									}
 									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
 									required
+									disabled={isEditing} // Disable email on edit to prevent identity change issues if desired, or keep enabled
+								/>
+							</div>
+							<div>
+								<label
+									htmlFor="edit-password"
+									className="block text-sm font-medium text-gray-700 mb-2"
+								>
+									Contraseña {isEditing && "(Opcional)"}
+								</label>
+								<input
+									id="edit-password"
+									type="password"
+									value={formData.password}
+									onChange={(e) =>
+										setFormData({ ...formData, password: e.target.value })
+									}
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+									placeholder={
+										isEditing
+											? "Dejar en blanco para mantener la actual"
+											: "Mínimo 6 caracteres"
+									}
+									required={!isEditing}
+									minLength={isEditing ? undefined : 6}
 								/>
 							</div>
 							<div>
@@ -242,10 +326,10 @@ export default function UserManagement() {
 								</label>
 								<select
 									id="edit-role"
-									value={editForm.role}
+									value={formData.role}
 									onChange={(e) =>
-										setEditForm({
-											...editForm,
+										setFormData({
+											...formData,
 											role: e.target.value as UserRole,
 										})
 									}
@@ -257,38 +341,40 @@ export default function UserManagement() {
 									<option value="TEAM_DEVELOPER">Team Developer</option>
 								</select>
 							</div>
-							<div>
-								<label className="flex items-center">
-									<input
-										type="checkbox"
-										checked={editForm.active}
-										onChange={(e) =>
-											setEditForm({ ...editForm, active: e.target.checked })
-										}
-										className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-									/>
-									<span className="ml-2 text-sm text-gray-700">
-										Usuario activo
-									</span>
-								</label>
+							{isEditing && (
+								<div>
+									<label className="flex items-center">
+										<input
+											type="checkbox"
+											checked={formData.active}
+											onChange={(e) =>
+												setFormData({ ...formData, active: e.target.checked })
+											}
+											className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+										/>
+										<span className="ml-2 text-sm text-gray-700">
+											Usuario activo
+										</span>
+									</label>
+								</div>
+							)}
+
+							<div className="flex gap-3 mt-6">
+								<button
+									type="button"
+									onClick={() => setShowModal(false)}
+									className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium"
+								>
+									Cancelar
+								</button>
+								<button
+									type="submit"
+									className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+								>
+									{isEditing ? "Guardar" : "Crear"}
+								</button>
 							</div>
-						</div>
-						<div className="flex gap-3 mt-6">
-							<button
-								type="button"
-								onClick={() => setEditingUser(null)}
-								className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium"
-							>
-								Cancelar
-							</button>
-							<button
-								type="button"
-								onClick={handleSave}
-								className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-							>
-								Guardar
-							</button>
-						</div>
+						</form>
 					</div>
 				</div>
 			)}

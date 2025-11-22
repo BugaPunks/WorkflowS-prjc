@@ -20,6 +20,13 @@ interface Rubric {
 	criteria: Criteria[];
 }
 
+interface RubricPayload {
+	projectId?: string;
+	name: string;
+	description: string;
+	criteria: Criteria[];
+}
+
 export default function Rubrics() {
 	const { session: user } = useSession();
 	const [projects, setProjects] = useState<Project[]>([]);
@@ -27,7 +34,13 @@ export default function Rubrics() {
 	const [rubrics, setRubrics] = useState<Rubric[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [showModal, setShowModal] = useState(false);
-	const [formData, setFormData] = useState({
+	const [isEditing, setIsEditing] = useState(false);
+	const [currentRubricId, setCurrentRubricId] = useState<string | null>(null);
+	const [formData, setFormData] = useState<{
+		name: string;
+		description: string;
+		criteria: Criteria[];
+	}>({
 		name: "",
 		description: "",
 		criteria: [{ id: Date.now(), name: "", maxScore: 10, weight: 1 }],
@@ -37,7 +50,9 @@ export default function Rubrics() {
 		try {
 			const response = await fetch("/api/projects");
 			const data = await response.json();
-			setProjects(data.data || []);
+			// Handle both array and { data: array } formats
+			const projectsList = Array.isArray(data) ? data : data.data || [];
+			setProjects(projectsList);
 		} catch (error) {
 			console.error("Error loading projects:", error);
 		}
@@ -68,34 +83,85 @@ export default function Rubrics() {
 		}
 	}, [selectedProject, loadRubrics]);
 
-	const handleCreateRubric = async (e: React.FormEvent) => {
+	const openCreateModal = () => {
+		setIsEditing(false);
+		setCurrentRubricId(null);
+		setFormData({
+			name: "",
+			description: "",
+			criteria: [{ id: Date.now(), name: "", maxScore: 10, weight: 1 }],
+		});
+		setShowModal(true);
+	};
+
+	const openEditModal = (rubric: Rubric) => {
+		setIsEditing(true);
+		setCurrentRubricId(rubric.id);
+		setFormData({
+			name: rubric.name,
+			description: rubric.description || "",
+			criteria: rubric.criteria.map((c) => ({
+				id: c.id,
+				name: c.name,
+				maxScore: c.maxScore,
+				weight: c.weight,
+			})),
+		});
+		setShowModal(true);
+	};
+
+	const handleSaveRubric = async (e: React.FormEvent) => {
 		e.preventDefault();
 		if (!selectedProject || !user) return;
 
 		try {
-			const response = await fetch("/api/rubrics", {
-				method: "POST",
+			const url = isEditing
+				? `/api/rubrics/${currentRubricId}`
+				: "/api/rubrics";
+			const method = isEditing ? "PUT" : "POST";
+
+			const body: RubricPayload = {
+				name: formData.name,
+				description: formData.description,
+				criteria: formData.criteria.filter((c) => c.name.trim() !== ""),
+			};
+
+			if (!isEditing) {
+				body.projectId = selectedProject.id;
+			}
+
+			const response = await fetch(url, {
+				method: method,
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					projectId: selectedProject.id,
-					name: formData.name,
-					description: formData.description,
-					criteria: formData.criteria.filter((c) => c.name.trim() !== ""),
-				}),
+				body: JSON.stringify(body),
 			});
 
-			if (!response.ok) throw new Error("Error creating rubric");
+			if (!response.ok) throw new Error("Error saving rubric");
 
-			setFormData({
-				name: "",
-				description: "",
-				criteria: [{ id: Date.now(), name: "", maxScore: 10, weight: 1 }],
-			});
 			setShowModal(false);
 			loadRubrics(selectedProject.id);
 		} catch (error) {
-			console.error("Error creating rubric:", error);
-			alert("Error al crear la rúbrica");
+			console.error("Error saving rubric:", error);
+			alert("Error al guardar la rúbrica");
+		}
+	};
+
+	const handleDeleteRubric = async (id: string) => {
+		if (!confirm("¿Estás seguro de que quieres eliminar esta rúbrica?")) return;
+
+		try {
+			const response = await fetch(`/api/rubrics/${id}`, {
+				method: "DELETE",
+			});
+
+			if (!response.ok) throw new Error("Error deleting rubric");
+
+			if (selectedProject) {
+				loadRubrics(selectedProject.id);
+			}
+		} catch (error) {
+			console.error("Error deleting rubric:", error);
+			alert("Error al eliminar la rúbrica");
 		}
 	};
 
@@ -141,7 +207,7 @@ export default function Rubrics() {
 				{selectedProject && (
 					<button
 						type="button"
-						onClick={() => setShowModal(true)}
+						onClick={openCreateModal}
 						className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium"
 					>
 						+ Nueva Rúbrica
@@ -195,28 +261,50 @@ export default function Rubrics() {
 							{rubrics.map((rubric) => (
 								<div
 									key={rubric.id}
-									className="bg-white p-6 rounded-lg shadow-md border border-gray-200"
+									className="bg-white p-6 rounded-lg shadow-md border border-gray-200 flex flex-col"
 								>
-									<h3 className="font-bold text-gray-900 mb-2">
-										{rubric.name}
-									</h3>
-									{rubric.description && (
-										<p className="text-gray-600 text-sm mb-4">
-											{rubric.description}
-										</p>
-									)}
-									<div className="space-y-2">
-										<h4 className="font-semibold text-gray-700 text-sm">
-											Criterios:
-										</h4>
-										{rubric.criteria.map((criterion) => (
-											<div key={criterion.id} className="text-xs text-gray-600">
-												<span className="font-medium">{criterion.name}</span>
-												<span className="ml-2">
-													(Max: {criterion.maxScore}, Peso: {criterion.weight})
-												</span>
+									<div className="flex-1">
+										<div className="flex justify-between items-start mb-2">
+											<h3 className="font-bold text-gray-900">{rubric.name}</h3>
+											<div className="flex gap-2">
+												<button
+													type="button"
+													onClick={() => openEditModal(rubric)}
+													className="text-indigo-600 hover:text-indigo-900 text-sm"
+												>
+													Editar
+												</button>
+												<button
+													type="button"
+													onClick={() => handleDeleteRubric(rubric.id)}
+													className="text-red-600 hover:text-red-900 text-sm"
+												>
+													Eliminar
+												</button>
 											</div>
-										))}
+										</div>
+										{rubric.description && (
+											<p className="text-gray-600 text-sm mb-4">
+												{rubric.description}
+											</p>
+										)}
+										<div className="space-y-2">
+											<h4 className="font-semibold text-gray-700 text-sm">
+												Criterios:
+											</h4>
+											{rubric.criteria.map((criterion) => (
+												<div
+													key={criterion.id}
+													className="text-xs text-gray-600"
+												>
+													<span className="font-medium">{criterion.name}</span>
+													<span className="ml-2">
+														(Max: {criterion.maxScore}, Peso: {criterion.weight}
+														)
+													</span>
+												</div>
+											))}
+										</div>
 									</div>
 								</div>
 							))}
@@ -225,14 +313,14 @@ export default function Rubrics() {
 				</div>
 			)}
 
-			{/* Modal for Creating Rubric */}
+			{/* Modal for Creating/Editing Rubric */}
 			{showModal && (
 				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
 					<div className="bg-white rounded-lg p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
 						<h3 className="text-2xl font-bold text-gray-900 mb-6">
-							Crear Nueva Rúbrica
+							{isEditing ? "Editar Rúbrica" : "Crear Nueva Rúbrica"}
 						</h3>
-						<form onSubmit={handleCreateRubric}>
+						<form onSubmit={handleSaveRubric}>
 							<div className="mb-4">
 								<label
 									htmlFor="rubric-name"
@@ -381,7 +469,7 @@ export default function Rubrics() {
 									type="submit"
 									className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
 								>
-									Crear Rúbrica
+									{isEditing ? "Guardar Cambios" : "Crear Rúbrica"}
 								</button>
 							</div>
 						</form>

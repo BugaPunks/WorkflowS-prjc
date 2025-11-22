@@ -1,3 +1,4 @@
+import bcryptjs from "bcryptjs";
 import { Router } from "express";
 import { prisma } from "../db";
 
@@ -48,11 +49,13 @@ router.post("/", async (req, res) => {
 			return res.status(400).json({ error: "Faltan campos requeridos" });
 		}
 
+		const hashedPassword = await bcryptjs.hash(password, 10);
+
 		const user = await prisma.user.create({
 			data: {
 				email,
 				name,
-				password, // En producción, hashear con bcrypt
+				password: hashedPassword,
 				role: role || "TEAM_DEVELOPER",
 			},
 		});
@@ -69,9 +72,20 @@ router.post("/", async (req, res) => {
 // PUT actualizar usuario
 router.put("/:id", async (req, res) => {
 	try {
+		const { id } = req.params;
+		const { password, ...otherData } = req.body;
+
+		// Use 'any' to bypass strict typing for dynamic update object to allow Prisma to handle it
+		// Biome might complain about 'any', but it is necessary here unless we map fields one by one
+		const updateData: any = { ...otherData };
+
+		if (password && typeof password === "string" && password.trim() !== "") {
+			updateData.password = await bcryptjs.hash(password, 10);
+		}
+
 		const user = await prisma.user.update({
-			where: { id: req.params.id },
-			data: req.body,
+			where: { id },
+			data: updateData,
 		});
 		res.json(user);
 	} catch {
