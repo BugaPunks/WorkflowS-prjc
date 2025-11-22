@@ -18,10 +18,11 @@ interface Rubric {
 	name: string;
 	description?: string;
 	criteria: Criteria[];
+	projectId?: string | null;
 }
 
 interface RubricPayload {
-	projectId?: string;
+	projectId?: string | null;
 	name: string;
 	description: string;
 	criteria: Criteria[];
@@ -32,6 +33,7 @@ export default function Rubrics() {
 	const [projects, setProjects] = useState<Project[]>([]);
 	const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 	const [rubrics, setRubrics] = useState<Rubric[]>([]);
+	const [globalRubrics, setGlobalRubrics] = useState<Rubric[]>([]);
 	const [isLoading, setIsLoading] = useState(false);
 	const [showModal, setShowModal] = useState(false);
 	const [isEditing, setIsEditing] = useState(false);
@@ -40,17 +42,18 @@ export default function Rubrics() {
 		name: string;
 		description: string;
 		criteria: Criteria[];
+		projectId: string | null;
 	}>({
 		name: "",
 		description: "",
 		criteria: [{ id: Date.now(), name: "", maxScore: 10, weight: 1 }],
+		projectId: null,
 	});
 
 	const loadProjects = useCallback(async () => {
 		try {
 			const response = await fetch("/api/projects");
 			const data = await response.json();
-			// Handle both array and { data: array } formats
 			const projectsList = Array.isArray(data) ? data : data.data || [];
 			setProjects(projectsList);
 		} catch (error) {
@@ -58,12 +61,24 @@ export default function Rubrics() {
 		}
 	}, []);
 
-	const loadRubrics = useCallback(async (projectId: string) => {
+	const loadRubrics = useCallback(async (projectId?: string | null) => {
 		try {
 			setIsLoading(true);
-			const response = await fetch(`/api/rubrics/${projectId}`);
+			let url = "/api/rubrics";
+			if (projectId) {
+				url += `?projectId=${projectId}`;
+			}
+			const response = await fetch(url);
 			const data = await response.json();
-			setRubrics(data.data || []);
+
+			if (projectId) {
+				// Filter to show only project specific rubrics in the project section
+				const allRubrics = data.data || [];
+				const projectRubrics = allRubrics.filter((r: Rubric) => r.projectId === projectId);
+				setRubrics(projectRubrics);
+			} else {
+				setGlobalRubrics(data.data || []);
+			}
 		} catch (error) {
 			console.error("Error loading rubrics:", error);
 		} finally {
@@ -73,7 +88,8 @@ export default function Rubrics() {
 
 	useEffect(() => {
 		loadProjects();
-	}, [loadProjects]);
+		loadRubrics(); // Load global rubrics initially
+	}, [loadProjects, loadRubrics]);
 
 	useEffect(() => {
 		if (selectedProject) {
@@ -83,13 +99,14 @@ export default function Rubrics() {
 		}
 	}, [selectedProject, loadRubrics]);
 
-	const openCreateModal = () => {
+	const openCreateModal = (forProject: boolean = false) => {
 		setIsEditing(false);
 		setCurrentRubricId(null);
 		setFormData({
 			name: "",
 			description: "",
 			criteria: [{ id: Date.now(), name: "", maxScore: 10, weight: 1 }],
+			projectId: forProject && selectedProject ? selectedProject.id : null,
 		});
 		setShowModal(true);
 	};
@@ -106,13 +123,14 @@ export default function Rubrics() {
 				maxScore: c.maxScore,
 				weight: c.weight,
 			})),
+			projectId: rubric.projectId || null,
 		});
 		setShowModal(true);
 	};
 
 	const handleSaveRubric = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!selectedProject || !user) return;
+		if (!user) return;
 
 		try {
 			const url = isEditing
@@ -124,11 +142,8 @@ export default function Rubrics() {
 				name: formData.name,
 				description: formData.description,
 				criteria: formData.criteria.filter((c) => c.name.trim() !== ""),
+				projectId: formData.projectId,
 			};
-
-			if (!isEditing) {
-				body.projectId = selectedProject.id;
-			}
 
 			const response = await fetch(url, {
 				method: method,
@@ -139,14 +154,19 @@ export default function Rubrics() {
 			if (!response.ok) throw new Error("Error saving rubric");
 
 			setShowModal(false);
-			loadRubrics(selectedProject.id);
+			// Reload both to be safe or check projectId
+			if (body.projectId) {
+				loadRubrics(body.projectId);
+			} else {
+				loadRubrics();
+			}
 		} catch (error) {
 			console.error("Error saving rubric:", error);
 			alert("Error al guardar la rúbrica");
 		}
 	};
 
-	const handleDeleteRubric = async (id: string) => {
+	const handleDeleteRubric = async (id: string, projectId?: string | null) => {
 		if (!confirm("¿Estás seguro de que quieres eliminar esta rúbrica?")) return;
 
 		try {
@@ -156,8 +176,10 @@ export default function Rubrics() {
 
 			if (!response.ok) throw new Error("Error deleting rubric");
 
-			if (selectedProject) {
-				loadRubrics(selectedProject.id);
+			if (projectId) {
+				loadRubrics(projectId);
+			} else {
+				loadRubrics();
 			}
 		} catch (error) {
 			console.error("Error deleting rubric:", error);
@@ -195,131 +217,188 @@ export default function Rubrics() {
 		}
 	};
 
+	const renderRubricCard = (rubric: Rubric) => (
+		<div
+			key={rubric.id}
+			className="bg-white p-6 rounded-lg shadow-md border border-gray-200 flex flex-col transition hover:shadow-lg"
+		>
+			<div className="flex-1">
+				<div className="flex justify-between items-start mb-2">
+					<h3 className="font-bold text-gray-900">{rubric.name}</h3>
+					<div className="flex gap-2">
+						<button
+							type="button"
+							onClick={() => openEditModal(rubric)}
+							className="text-indigo-600 hover:text-indigo-900 text-sm font-medium"
+						>
+							Editar
+						</button>
+						<button
+							type="button"
+							onClick={() => handleDeleteRubric(rubric.id, rubric.projectId)}
+							className="text-red-600 hover:text-red-900 text-sm font-medium"
+						>
+							Eliminar
+						</button>
+					</div>
+				</div>
+				{rubric.description && (
+					<p className="text-gray-600 text-sm mb-4">{rubric.description}</p>
+				)}
+				<div className="space-y-2 mt-4">
+					<h4 className="font-semibold text-gray-700 text-xs uppercase tracking-wider">
+						Criterios:
+					</h4>
+					{rubric.criteria.map((criterion) => (
+						<div
+							key={criterion.id}
+							className="text-sm text-gray-600 flex justify-between"
+						>
+							<span>{criterion.name}</span>
+							<span className="text-gray-400">
+								{criterion.weight}x / {criterion.maxScore}pts
+							</span>
+						</div>
+					))}
+				</div>
+			</div>
+		</div>
+	);
+
 	return (
 		<div className="p-8 max-w-7xl mx-auto">
 			<div className="flex items-center justify-between mb-8">
 				<div>
-					<h1 className="text-3xl font-bold text-gray-900">Rúbricas</h1>
+					<h1 className="text-3xl font-bold text-gray-900">
+						Gestión de Rúbricas
+					</h1>
 					<p className="text-gray-600 mt-2">
-						Gestiona las rúbricas de evaluación para tus proyectos
+						Define y gestiona los criterios de evaluación.
 					</p>
 				</div>
-				{selectedProject && (
+			</div>
+
+			{/* Global Rubrics Section */}
+			<div className="mb-12">
+				<div className="flex items-center justify-between mb-6">
+					<h2 className="text-xl font-bold text-gray-800">
+						Rúbricas Globales (Plantillas)
+					</h2>
 					<button
 						type="button"
-						onClick={openCreateModal}
-						className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium"
+						onClick={() => openCreateModal(false)}
+						className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium text-sm flex items-center gap-2"
 					>
-						+ Nueva Rúbrica
+						<span>+</span> Nueva Rúbrica Global
 					</button>
+				</div>
+
+				{isLoading && globalRubrics.length === 0 ? (
+					<div className="text-center py-8">
+						<div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
+					</div>
+				) : globalRubrics.length === 0 ? (
+					<div className="bg-gray-50 rounded-lg p-8 text-center border border-dashed border-gray-300">
+						<p className="text-gray-500">No hay rúbricas globales definidas.</p>
+						<button
+							onClick={() => openCreateModal(false)}
+							className="text-blue-600 hover:underline mt-2 text-sm"
+						>
+							Crear la primera plantilla
+						</button>
+					</div>
+				) : (
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+						{globalRubrics.map(renderRubricCard)}
+					</div>
 				)}
 			</div>
 
-			{/* Project Selection */}
-			<div className="mb-8">
-				<label
-					htmlFor="project-select"
-					className="block text-sm font-medium text-gray-700 mb-2"
-				>
-					Seleccionar Proyecto
-				</label>
-				<select
-					id="project-select"
-					value={selectedProject?.id || ""}
-					onChange={(e) => {
-						const project = projects.find((p) => p.id === e.target.value);
-						setSelectedProject(project || null);
-					}}
-					className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-				>
-					<option value="">Selecciona un proyecto</option>
-					{projects.map((project) => (
-						<option key={project.id} value={project.id}>
-							{project.name}
-						</option>
-					))}
-				</select>
-			</div>
+			<hr className="my-8 border-gray-200" />
 
-			{/* Rubrics List */}
-			{selectedProject && (
-				<div>
-					<h2 className="text-xl font-semibold text-gray-800 mb-4">
-						Rúbricas de {selectedProject.name}
+			{/* Project Specific Rubrics Section */}
+			<div>
+				<div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+					<h2 className="text-xl font-bold text-gray-800">
+						Rúbricas por Proyecto
 					</h2>
-					{isLoading ? (
-						<div className="text-center py-12">
-							<div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-							<p className="text-gray-600 mt-4">Cargando rúbricas...</p>
+					<div className="flex items-center gap-4">
+						<select
+							id="project-select"
+							value={selectedProject?.id || ""}
+							onChange={(e) => {
+								const project = projects.find((p) => p.id === e.target.value);
+								setSelectedProject(project || null);
+							}}
+							className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[250px]"
+						>
+							<option value="">Selecciona un proyecto...</option>
+							{projects.map((project) => (
+								<option key={project.id} value={project.id}>
+									{project.name}
+								</option>
+							))}
+						</select>
+
+						{selectedProject && (
+							<button
+								type="button"
+								onClick={() => openCreateModal(true)}
+								className="bg-white text-blue-600 border border-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50 font-medium text-sm whitespace-nowrap"
+							>
+								+ Rúbrica para {selectedProject.name}
+							</button>
+						)}
+					</div>
+				</div>
+
+				{selectedProject ? (
+					isLoading && rubrics.length === 0 ? (
+						<div className="text-center py-8">
+							<div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
 						</div>
 					) : rubrics.length === 0 ? (
-						<p className="text-gray-500 italic">
-							No hay rúbricas definidas para este proyecto.
-						</p>
+						<div className="bg-gray-50 rounded-lg p-8 text-center border border-dashed border-gray-300">
+							<p className="text-gray-500">
+								No hay rúbricas específicas para {selectedProject.name}.
+							</p>
+						</div>
 					) : (
 						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-							{rubrics.map((rubric) => (
-								<div
-									key={rubric.id}
-									className="bg-white p-6 rounded-lg shadow-md border border-gray-200 flex flex-col"
-								>
-									<div className="flex-1">
-										<div className="flex justify-between items-start mb-2">
-											<h3 className="font-bold text-gray-900">{rubric.name}</h3>
-											<div className="flex gap-2">
-												<button
-													type="button"
-													onClick={() => openEditModal(rubric)}
-													className="text-indigo-600 hover:text-indigo-900 text-sm"
-												>
-													Editar
-												</button>
-												<button
-													type="button"
-													onClick={() => handleDeleteRubric(rubric.id)}
-													className="text-red-600 hover:text-red-900 text-sm"
-												>
-													Eliminar
-												</button>
-											</div>
-										</div>
-										{rubric.description && (
-											<p className="text-gray-600 text-sm mb-4">
-												{rubric.description}
-											</p>
-										)}
-										<div className="space-y-2">
-											<h4 className="font-semibold text-gray-700 text-sm">
-												Criterios:
-											</h4>
-											{rubric.criteria.map((criterion) => (
-												<div
-													key={criterion.id}
-													className="text-xs text-gray-600"
-												>
-													<span className="font-medium">{criterion.name}</span>
-													<span className="ml-2">
-														(Max: {criterion.maxScore}, Peso: {criterion.weight}
-														)
-													</span>
-												</div>
-											))}
-										</div>
-									</div>
-								</div>
-							))}
+							{rubrics.map(renderRubricCard)}
 						</div>
-					)}
-				</div>
-			)}
+					)
+				) : (
+					<div className="bg-gray-50 rounded-lg p-8 text-center">
+						<p className="text-gray-500">
+							Selecciona un proyecto para ver sus rúbricas específicas.
+						</p>
+					</div>
+				)}
+			</div>
 
 			{/* Modal for Creating/Editing Rubric */}
 			{showModal && (
 				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-					<div className="bg-white rounded-lg p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-						<h3 className="text-2xl font-bold text-gray-900 mb-6">
-							{isEditing ? "Editar Rúbrica" : "Crear Nueva Rúbrica"}
-						</h3>
+					<div className="bg-white rounded-lg p-8 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-xl transform transition-all">
+						<div className="flex justify-between items-center mb-6">
+							<h3 className="text-2xl font-bold text-gray-900">
+								{isEditing ? "Editar Rúbrica" : "Crear Nueva Rúbrica"}
+							</h3>
+							<button
+								onClick={() => setShowModal(false)}
+								className="text-gray-400 hover:text-gray-600"
+							>
+								✕
+							</button>
+						</div>
+
+						<div className="mb-6 bg-blue-50 text-blue-800 px-4 py-2 rounded-md text-sm">
+							{formData.projectId
+								? `Esta rúbrica será específica para el proyecto: ${projects.find((p) => p.id === formData.projectId)?.name}`
+								: "Esta será una rúbrica global (plantilla) disponible para todos los proyectos."}
+						</div>
+
 						<form onSubmit={handleSaveRubric}>
 							<div className="mb-4">
 								<label
@@ -367,23 +446,23 @@ export default function Rubrics() {
 									<button
 										type="button"
 										onClick={addCriteria}
-										className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+										className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
 									>
-										+ Agregar Criterio
+										<span>+</span> Agregar Criterio
 									</button>
 								</div>
 								<div className="space-y-4">
-									{formData.criteria.map((criterion) => (
+									{formData.criteria.map((criterion, _index) => (
 										<div
 											key={criterion.id}
-											className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg"
+											className="flex flex-wrap sm:flex-nowrap items-start gap-4 p-4 bg-gray-50 rounded-lg border border-gray-200"
 										>
-											<div className="flex-1">
+											<div className="flex-1 w-full sm:w-auto">
 												<label
 													htmlFor={`criterion-name-${criterion.id}`}
-													className="block text-sm font-medium text-gray-700 mb-1"
+													className="block text-xs font-medium text-gray-500 mb-1 uppercase"
 												>
-													Nombre del Criterio
+													Criterio
 												</label>
 												<input
 													id={`criterion-name-${criterion.id}`}
@@ -400,9 +479,9 @@ export default function Rubrics() {
 											<div className="w-24">
 												<label
 													htmlFor={`criterion-max-${criterion.id}`}
-													className="block text-sm font-medium text-gray-700 mb-1"
+													className="block text-xs font-medium text-gray-500 mb-1 uppercase"
 												>
-													Max Puntuación
+													Max Pts
 												</label>
 												<input
 													id={`criterion-max-${criterion.id}`}
@@ -423,7 +502,7 @@ export default function Rubrics() {
 											<div className="w-24">
 												<label
 													htmlFor={`criterion-weight-${criterion.id}`}
-													className="block text-sm font-medium text-gray-700 mb-1"
+													className="block text-xs font-medium text-gray-500 mb-1 uppercase"
 												>
 													Peso
 												</label>
@@ -446,10 +525,10 @@ export default function Rubrics() {
 												<button
 													type="button"
 													onClick={() => removeCriteria(criterion.id)}
-													className="text-red-500 hover:text-red-700 mt-6"
+													className="text-red-500 hover:text-red-700 mt-6 p-1 hover:bg-red-50 rounded"
 													title="Eliminar criterio"
 												>
-													×
+													✕
 												</button>
 											)}
 										</div>
@@ -457,7 +536,7 @@ export default function Rubrics() {
 								</div>
 							</div>
 
-							<div className="flex gap-3">
+							<div className="flex gap-3 pt-4 border-t border-gray-100">
 								<button
 									type="button"
 									onClick={() => setShowModal(false)}
@@ -467,7 +546,7 @@ export default function Rubrics() {
 								</button>
 								<button
 									type="submit"
-									className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+									className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-sm"
 								>
 									{isEditing ? "Guardar Cambios" : "Crear Rúbrica"}
 								</button>

@@ -72,7 +72,7 @@ export default function Evaluations() {
 
 	const loadRubrics = useCallback(async (projectId: string) => {
 		try {
-			const response = await fetch(`/api/rubrics/${projectId}`);
+			const response = await fetch(`/api/rubrics?projectId=${projectId}`);
 			if (response.ok) {
 				const data = await response.json();
 				setAvailableRubrics(data.data || []);

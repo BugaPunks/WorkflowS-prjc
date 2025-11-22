@@ -88,10 +88,8 @@ export function LoginForm() {
 				}),
 			);
 
-			// Redirigir a vista de éxito
-			navigate("/login-success", {
-				state: { user: data.user },
-			});
+			// Redirigir directamente al dashboard (Proyectos)
+			navigate("/projects");
 		} catch (error) {
 			setSubmitError(
 				error instanceof Error ? error.message : "Error desconocido",

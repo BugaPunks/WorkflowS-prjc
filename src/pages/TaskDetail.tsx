@@ -9,6 +9,7 @@ interface Task {
 	status: string;
 	deadline: string;
 	createdAt: string;
+	projectId: string;
 }
 
 interface User {
@@ -143,13 +144,25 @@ export default function TaskDetail() {
 							<h1 className="text-4xl font-bold text-gray-900">{task.title}</h1>
 							<p className="text-gray-600 mt-2">{task.description}</p>
 						</div>
-						<button
-							type="button"
-							onClick={() => setShowEditModal(true)}
-							className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium whitespace-nowrap ml-4"
-						>
-							Editar
-						</button>
+						<div className="flex gap-3 ml-4">
+							{/* Show Grade button if user has permission (simplistic check) */}
+							<button
+								type="button"
+								onClick={() =>
+									navigate(`/projects/${task.projectId}/tasks/${task.id}/grade`)
+								}
+								className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 font-medium whitespace-nowrap"
+							>
+								Calificar
+							</button>
+							<button
+								type="button"
+								onClick={() => setShowEditModal(true)}
+								className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 font-medium whitespace-nowrap"
+							>
+								Editar
+							</button>
+						</div>
 					</div>
 				</div>
 
