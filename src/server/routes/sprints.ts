@@ -10,6 +10,7 @@ router.get("/", async (_req, res) => {
 			include: {
 				project: true,
 				tasks: true,
+				userStories: true,
 				backlogItems: {
 					include: {
 						userStory: true,
@@ -35,6 +36,7 @@ router.get("/:id", async (req, res) => {
 			include: {
 				project: true,
 				tasks: true,
+				userStories: true,
 				backlogItems: {
 					include: {
 						userStory: true,
@@ -110,21 +112,7 @@ router.post("/:id/add-story", async (req, res) => {
 			return res.status(400).json({ error: "Falta userStoryId" });
 		}
 
-		// Verificar si ya existe un BacklogItem para esta historia en este sprint
-		const existingItem = await prisma.backlogItem.findFirst({
-			where: {
-				sprintId,
-				userStoryId,
-			},
-		});
-
-		if (existingItem) {
-			return res
-				.status(400)
-				.json({ error: "La historia ya está en el sprint" });
-		}
-
-		// Obtener la historia para copiar detalles
+		// Verificar si la historia existe
 		const userStory = await prisma.userStory.findUnique({
 			where: { id: userStoryId },
 		});
@@ -133,21 +121,20 @@ router.post("/:id/add-story", async (req, res) => {
 			return res.status(404).json({ error: "Historia no encontrada" });
 		}
 
-		// Crear BacklogItem
-		const backlogItem = await prisma.backlogItem.create({
-			data: {
-				sprintId,
-				userStoryId,
-				projectId: userStory.projectId,
-				title: userStory.title,
-				description: userStory.description,
-				priority: userStory.priority,
-				storyPoints: userStory.storyPoints,
-				status: "TODO",
-			},
+		// Verificar si ya está en ESTE sprint
+		if (userStory.sprintId === sprintId) {
+			return res
+				.status(400)
+				.json({ error: "La historia ya está en el sprint" });
+		}
+
+		// Actualizar la historia directamente
+		const updatedStory = await prisma.userStory.update({
+			where: { id: userStoryId },
+			data: { sprintId },
 		});
 
-		res.status(201).json({ data: backlogItem });
+		res.status(201).json({ data: updatedStory });
 	} catch (error) {
 		console.error("Error al agregar historia al sprint:", error);
 		res.status(500).json({

@@ -76,7 +76,8 @@ export default function GradingView() {
 					const data = await res.json();
 					if (data.error) throw new Error(data.error);
 					// Normalizing task data
-					targetData = { ...data, projectId };
+					const task = data.data || data;
+					targetData = { ...task, projectId };
 				} else if (sprintId) {
 					// Fetch Sprint
 					// Assuming we have /api/sprints/:id

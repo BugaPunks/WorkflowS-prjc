@@ -601,6 +601,7 @@ interface UserStory {
 	priority: string;
 	storyPoints?: number;
 	projectId: string;
+	sprintId?: string | null;
 }
 
 interface BacklogItem {
@@ -616,6 +617,7 @@ interface Sprint {
 	startDate: string;
 	endDate: string;
 	status: string;
+	userStories: UserStory[];
 	backlogItems: BacklogItem[];
 }
 
@@ -672,19 +674,15 @@ export default function ProjectDetail() {
 				(s: UserStory) => s.projectId === id,
 			);
 
-			// Filter stories that are NOT in any sprint (not in backlogItems of any sprint)
-			const assignedStoryIds = new Set();
-			projectSprints.forEach((s) => {
-				if (s.backlogItems) {
-					s.backlogItems.forEach((bi) => {
-						assignedStoryIds.add(bi.userStoryId);
-					});
-				}
-			});
+			// Filter stories that are NOT in any sprint
+			// We can rely on sprintId property or the fact they are in sprint.userStories
+			// Ideally the stories fetched from /api/user-stories have sprintId
 
-			const unassigned = projectStories.filter(
-				(s) => !assignedStoryIds.has(s.id),
-			);
+			// Wait, does /api/user-stories return sprintId?
+			// We haven't checked user-stories.ts but prisma defaults to including scalars.
+			// So yes.
+
+			const unassigned = projectStories.filter((s) => !s.sprintId);
 			setBacklogStories(unassigned);
 		} catch (err) {
 			setError("Error al cargar el proyecto");
@@ -761,19 +759,15 @@ export default function ProjectDetail() {
 				// Remove from backlog
 				setBacklogStories((prev) => prev.filter((s) => s.id !== draggableId));
 
-				// Add to sprint (visually) - we need a mock BacklogItem structure
+				// Add to sprint (visually)
 				setSprints((prev) =>
 					prev.map((s) => {
 						if (s.id === sprintId) {
 							return {
 								...s,
-								backlogItems: [
-									...(s.backlogItems || []),
-									{
-										id: "temp",
-										userStoryId: storyToMove.id,
-										userStory: storyToMove,
-									} as BacklogItem,
+								userStories: [
+									...(s.userStories || []),
+									{ ...storyToMove, sprintId },
 								],
 							};
 						}
@@ -1099,29 +1093,29 @@ export default function ProjectDetail() {
 													{...provided.droppableProps}
 													className="p-4 min-h-[100px] bg-white"
 												>
-													{!sprint.backlogItems ||
-													sprint.backlogItems.length === 0 ? (
+													{!sprint.userStories ||
+													sprint.userStories.length === 0 ? (
 														<div className="text-center py-6 text-gray-400 text-sm border-2 border-dashed border-gray-100 rounded">
 															Arrastra historias aquí para planificar el sprint
 														</div>
 													) : (
 														<div className="space-y-2">
-															{sprint.backlogItems.map((item) => (
+															{sprint.userStories.map((story) => (
 																<div
-																	key={item.id}
+																	key={story.id}
 																	className="flex items-center justify-between p-3 bg-blue-50 rounded border border-blue-100"
 																>
 																	<div>
 																		<p className="font-medium text-sm text-blue-900">
-																			{item.userStory.title}
+																			{story.title}
 																		</p>
 																		<p className="text-xs text-blue-600 mt-0.5 line-clamp-1">
-																			{item.userStory.description}
+																			{story.description}
 																		</p>
 																	</div>
-																	{item.userStory.storyPoints && (
+																	{story.storyPoints && (
 																		<span className="text-xs font-bold bg-white text-blue-600 px-2 py-1 rounded border border-blue-100">
-																			{item.userStory.storyPoints}
+																			{story.storyPoints}
 																		</span>
 																	)}
 																</div>

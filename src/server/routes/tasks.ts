@@ -42,7 +42,7 @@ router.get("/:id", async (req, res) => {
 			},
 		});
 		if (!task) return res.status(404).json({ error: "Tarea no encontrada" });
-		res.json(task);
+		res.json({ data: task });
 	} catch {
 		res.status(500).json({ error: "Error al obtener tarea" });
 	}
@@ -91,7 +91,7 @@ router.post("/", async (req, res) => {
 			});
 		}
 
-		res.status(201).json(task);
+		res.status(201).json({ data: task });
 	} catch {
 		res.status(500).json({ error: "Error al crear tarea" });
 	}
@@ -108,7 +108,7 @@ router.put("/:id", async (req, res) => {
 				deadline: deadline ? new Date(deadline) : undefined,
 			},
 		});
-		res.json(task);
+		res.json({ data: task });
 	} catch {
 		res.status(500).json({ error: "Error al actualizar tarea" });
 	}
@@ -120,7 +120,7 @@ router.delete("/:id", async (req, res) => {
 		await prisma.task.delete({
 			where: { id: req.params.id },
 		});
-		res.json({ message: "Tarea eliminada" });
+		res.json({ data: { message: "Tarea eliminada" } });
 	} catch {
 		res.status(500).json({ error: "Error al eliminar tarea" });
 	}

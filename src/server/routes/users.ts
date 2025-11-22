@@ -34,7 +34,7 @@ router.get("/:id", async (req, res) => {
 			},
 		});
 		if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
-		res.json(user);
+		res.json({ data: user });
 	} catch {
 		res.status(500).json({ error: "Error al obtener usuario" });
 	}
@@ -59,7 +59,7 @@ router.post("/", async (req, res) => {
 				role: role || "TEAM_DEVELOPER",
 			},
 		});
-		res.status(201).json(user);
+		res.status(201).json({ data: user });
 	} catch (error) {
 		const err = error as { code?: string };
 		if (err.code === "P2002") {
@@ -87,7 +87,7 @@ router.put("/:id", async (req, res) => {
 			where: { id },
 			data: updateData,
 		});
-		res.json(user);
+		res.json({ data: user });
 	} catch {
 		res.status(500).json({ error: "Error al actualizar usuario" });
 	}
@@ -99,7 +99,7 @@ router.delete("/:id", async (req, res) => {
 		await prisma.user.delete({
 			where: { id: req.params.id },
 		});
-		res.json({ message: "Usuario eliminado" });
+		res.json({ data: { message: "Usuario eliminado" } });
 	} catch {
 		res.status(500).json({ error: "Error al eliminar usuario" });
 	}
