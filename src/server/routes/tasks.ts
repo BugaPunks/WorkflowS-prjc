@@ -101,7 +101,20 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
 	try {
 		const { deadline, status, ...updateData } = req.body;
-		const dataToUpdate: any = { ...updateData };
+
+		// Define a specific type for the update object
+		interface TaskUpdateData {
+			title?: string;
+			description?: string;
+			priority?: string;
+			assigneeId?: string;
+			sprintId?: string;
+			deadline?: Date | null;
+			status?: string;
+			completedAt?: Date | null;
+		}
+
+		const dataToUpdate: TaskUpdateData = { ...updateData };
 
 		if (deadline) dataToUpdate.deadline = new Date(deadline);
 		if (status) {

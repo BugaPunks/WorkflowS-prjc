@@ -80,7 +80,20 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
 	try {
 		const { status, ...updateData } = req.body;
-		const dataToUpdate: any = { ...updateData };
+
+		interface UserStoryUpdateData {
+			title?: string;
+			description?: string;
+			acceptance?: string;
+			priority?: string;
+			storyPoints?: number;
+			assigneeId?: string;
+			sprintId?: string | null;
+			status?: string;
+			completedAt?: Date | null;
+		}
+
+		const dataToUpdate: UserStoryUpdateData = { ...updateData };
 
 		if (status) {
 			dataToUpdate.status = status;

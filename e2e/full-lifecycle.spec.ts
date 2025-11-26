@@ -412,6 +412,9 @@ test.describe("Full Project Lifecycle: Teacher and Student", () => {
 		// It calculates `completed` points.
 		// So even if sprint is active, it shows data for that sprint name.
 		// We should see the sprint name on X-axis.
-		await expect(page.locator(".recharts-responsive-container")).toBeVisible();
+		const velocityCard = page.locator("div.bg-white", {
+			has: page.getByRole("heading", { name: "Velocidad del Equipo (Velocity)" }),
+		});
+		await expect(velocityCard.locator(".recharts-responsive-container")).toBeVisible();
 	});
 });

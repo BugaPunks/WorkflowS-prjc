@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { loginViaApi } from './utils/api-auth';
 
 test.describe('Direct Messages', () => {
   test('should allow direct messaging between teacher and student', async ({ page, request }) => {
@@ -21,10 +20,13 @@ test.describe('Direct Messages', () => {
     // Login Teacher
     await page.goto('/'); // Load context
     await page.evaluate((user) => localStorage.setItem('user', JSON.stringify(user)), teacher);
-    await page.goto('/messages');
+    await page.goto('/projects');
+
+    // Open Chat Widget
+    await page.locator('button:has(svg.lucide-message-circle)').click();
 
     // Start DM
-    await page.click('button[title="Nuevo Mensaje"]');
+    await page.click('button[title="Nuevo Chat"]');
     await expect(page.getByText('Nuevo Mensaje')).toBeVisible();
 
     // Select Student
@@ -37,7 +39,7 @@ test.describe('Direct Messages', () => {
     await expect(page.getByRole('heading', { name: student.name })).toBeVisible();
 
     // Send Message
-    await page.fill('input[placeholder="Escribe un mensaje..."]', 'Hello Student');
+    await page.fill('input[placeholder="Mensaje..."]', 'Hello Student');
     await page.click('button[type="submit"]');
 
     await expect(page.getByText('Hello Student').last()).toBeVisible();
@@ -46,7 +48,9 @@ test.describe('Direct Messages', () => {
     // Login Student
     await page.evaluate((user) => localStorage.setItem('user', JSON.stringify(user)), student);
     await page.reload();
-    await page.goto('/messages');
+
+    // Open chat widget again as it closes on reload
+    await page.locator('button:has(svg.lucide-message-circle)').click();
 
     // Should see chat in list with Teacher Name
     await expect(page.getByText(teacher.name)).toBeVisible();
@@ -56,7 +60,7 @@ test.describe('Direct Messages', () => {
     await expect(page.getByText('Hello Student').last()).toBeVisible();
 
     // Reply
-    await page.fill('input[placeholder="Escribe un mensaje..."]', 'Hello Teacher');
+    await page.fill('input[placeholder="Mensaje..."]', 'Hello Teacher');
     await page.click('button[type="submit"]');
     await expect(page.getByText('Hello Teacher')).toBeVisible();
   });
