@@ -21,10 +21,6 @@ router.get("/:projectId", async (req, res) => {
 			orderBy: { uploadedAt: "desc" },
 		});
 
-		// If a document has versions, the "latest" info is actually in the versions array if we want to show that?
-		// Or usually we show the "parent" as the container and the highest version number.
-		// Let's map to a structure that shows version info.
-
 		const result = documents.map((doc) => {
 			// Find max version
 			const maxVersion =
@@ -45,7 +41,7 @@ router.get("/:projectId", async (req, res) => {
 	}
 });
 
-// POST subir documento (Simulado con Versionado)
+// POST subir documento (Root)
 router.post("/:projectId", async (req, res) => {
 	try {
 		const { projectId } = req.params;
@@ -68,27 +64,19 @@ router.post("/:projectId", async (req, res) => {
 			},
 		});
 
-		let document: {
-			id: string;
-			name: string;
-			type: string;
-			size: number;
-			uploadedAt: Date;
-			projectId: string;
-			url: string;
-			version: number;
-		};
-
 		if (existingDoc) {
-			// Create a new version
-			// Determine next version number
+			// If it exists, we could either return error or create version automatically.
+			// To be explicit, let's treat it as "conflict" unless the user used the "new version" endpoint.
+			// But for backward compatibility/simplicity, if they just upload same name, we can create version.
+			// Let's create version to be friendly.
+
 			const lastVersion =
 				existingDoc.versions.length > 0
 					? existingDoc.versions[0].version
 					: existingDoc.version;
 			const newVersion = lastVersion + 1;
 
-			document = await prisma.document.create({
+			const version = await prisma.document.create({
 				data: {
 					projectId,
 					name,
@@ -99,24 +87,85 @@ router.post("/:projectId", async (req, res) => {
 					parentId: existingDoc.id,
 				},
 			});
-		} else {
-			// Create new root document
-			document = await prisma.document.create({
-				data: {
-					projectId,
-					name,
-					type: type || "FILE",
-					size: size || 0,
-					url: `https://fake-storage.com/${projectId}/${name}?v=1`,
-					version: 1,
-				},
-			});
+			return res.status(201).json(version);
 		}
+
+		// Create new root document
+		const document = await prisma.document.create({
+			data: {
+				projectId,
+				name,
+				type: type || "FILE",
+				size: size || 0,
+				url: `https://fake-storage.com/${projectId}/${name}?v=1`,
+				version: 1,
+			},
+		});
 
 		res.status(201).json(document);
 	} catch (_error) {
 		console.error(_error);
 		res.status(500).json({ error: "Error al subir documento" });
+	}
+});
+
+// POST subir nueva versión explícita
+router.post("/:id/versions", async (req, res) => {
+	try {
+		const { id } = req.params; // Parent Document ID
+		const { name, type, size } = req.body;
+
+		// Find parent
+		const parentDoc = await prisma.document.findUnique({
+			where: { id },
+			include: {
+				versions: {
+					orderBy: { version: "desc" },
+					take: 1,
+				},
+			},
+		});
+
+		if (!parentDoc) {
+			return res
+				.status(404)
+				.json({ error: "Documento original no encontrado" });
+		}
+
+		// If the user tries to add version to a child, redirect to parent?
+		// Better to enforce that :id is the parent.
+		if (parentDoc.parentId) {
+			return res.status(400).json({
+				error:
+					"No se puede crear una versión de una versión. Use el ID del documento original.",
+			});
+		}
+
+		const lastVersion =
+			parentDoc.versions.length > 0
+				? parentDoc.versions[0].version
+				: parentDoc.version;
+		const newVersion = lastVersion + 1;
+
+		// If name is not provided, use parent name
+		const finalName = name || parentDoc.name;
+
+		const document = await prisma.document.create({
+			data: {
+				projectId: parentDoc.projectId,
+				name: finalName,
+				type: type || parentDoc.type,
+				size: size || parentDoc.size,
+				url: `https://fake-storage.com/${parentDoc.projectId}/${finalName}?v=${newVersion}`,
+				version: newVersion,
+				parentId: parentDoc.id,
+			},
+		});
+
+		res.status(201).json(document);
+	} catch (error) {
+		console.error(error);
+		res.status(500).json({ error: "Error al crear nueva versión" });
 	}
 });
 

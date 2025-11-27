@@ -4,8 +4,9 @@ import {
 	Droppable,
 	type DropResult,
 } from "@hello-pangea/dnd";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { Modal } from "@/components/Modal";
 import RetrospectiveBoard from "@/components/RetrospectiveBoard";
 import { useSession } from "@/hooks/useSession";
 
@@ -165,6 +166,9 @@ function DocumentsSection({ projectId }: { projectId: string }) {
 	const [uploading, setUploading] = useState(false);
 	const [showHistory, setShowHistory] = useState<string | null>(null);
 	const [historyData, setHistoryData] = useState<DocumentVersion[]>([]);
+	const [showUploadModal, setShowUploadModal] = useState(false);
+	const [uploadParentId, setUploadParentId] = useState<string | null>(null);
+	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	const loadDocs = useCallback(async () => {
 		try {
@@ -195,36 +199,47 @@ function DocumentsSection({ projectId }: { projectId: string }) {
 		loadDocs();
 	}, [loadDocs]);
 
-	const handleUpload = async () => {
-		// Simulate file selection
-		const fileName = prompt("Nombre del archivo (Simulación):");
-		if (!fileName) return;
+	const openUploadModal = (parentId: string | null = null) => {
+		setUploadParentId(parentId);
+		setShowUploadModal(true);
+	};
 
-		// Check if overwrite/new version
-		const existing = documents.find((d) => d.name === fileName);
-		if (existing) {
-			if (
-				!confirm(
-					`El archivo "${fileName}" ya existe (Versión ${existing.latestVersion || existing.version}). ¿Subir nueva versión?`,
-				)
-			) {
-				return;
-			}
+	const handleUploadSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+		const files = fileInputRef.current?.files;
+		if (!files || files.length === 0) {
+			alert("Por favor selecciona un archivo.");
+			return;
 		}
 
+		const file = files[0];
 		setUploading(true);
+
 		try {
-			const response = await fetch(`/api/documents/${projectId}`, {
+			const url = uploadParentId
+				? `/api/documents/${uploadParentId}/versions`
+				: `/api/documents/${projectId}`;
+			const body = {
+				name: file.name,
+				type: file.name.split(".").pop()?.toUpperCase() || "FILE",
+				size: file.size,
+			};
+
+			const response = await fetch(url, {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					name: fileName,
-					type: fileName.split(".").pop()?.toUpperCase() || "FILE",
-					size: Math.floor(Math.random() * 5000),
-				}),
+				body: JSON.stringify(body),
 			});
-			if (response.ok) {
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				alert(errorData.error || "Error al subir");
+			} else {
 				loadDocs();
+				if (uploadParentId && showHistory === uploadParentId) {
+					loadHistory(uploadParentId);
+				}
+				setShowUploadModal(false);
 			}
 		} catch (_err) {
 			alert("Error al subir");
@@ -251,11 +266,11 @@ function DocumentsSection({ projectId }: { projectId: string }) {
 					<h3 className="font-bold text-lg text-gray-800">Documentos</h3>
 					<button
 						type="button"
-						onClick={handleUpload}
+						onClick={() => openUploadModal(null)}
 						disabled={uploading}
 						className="text-sm bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded font-medium transition-colors"
 					>
-						{uploading ? "Subiendo..." : "Subir Archivo"}
+						+ Subir Archivo
 					</button>
 				</div>
 
@@ -301,24 +316,33 @@ function DocumentsSection({ projectId }: { projectId: string }) {
 									{new Date(doc.uploadedAt).toLocaleDateString()}
 								</p>
 
-								<div className="mt-auto flex gap-2">
-									<a
-										href={doc.url}
-										target="_blank"
-										rel="noopener noreferrer"
-										className="flex-1 text-center block bg-gray-50 hover:bg-gray-100 text-blue-600 text-sm py-2 rounded"
-									>
-										Descargar
-									</a>
-									{doc.versionCount && doc.versionCount > 1 && (
-										<button
-											type="button"
-											onClick={() => loadHistory(doc.id)}
-											className="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-600 text-sm py-2 rounded"
+								<div className="mt-auto flex flex-col gap-2">
+									<div className="flex gap-2">
+										<a
+											href={doc.url}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="flex-1 text-center block bg-gray-50 hover:bg-gray-100 text-blue-600 text-sm py-2 rounded"
 										>
-											Historial
-										</button>
-									)}
+											Descargar
+										</a>
+										{doc.versionCount && doc.versionCount > 1 && (
+											<button
+												type="button"
+												onClick={() => loadHistory(doc.id)}
+												className="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-600 text-sm py-2 rounded"
+											>
+												Historial
+											</button>
+										)}
+									</div>
+									<button
+										type="button"
+										onClick={() => openUploadModal(doc.id)}
+										className="w-full text-center text-xs text-blue-600 hover:text-blue-800 border border-dashed border-blue-200 hover:border-blue-400 rounded py-1"
+									>
+										+ Nueva Versión
+									</button>
 								</div>
 							</div>
 						))}
@@ -366,6 +390,62 @@ function DocumentsSection({ projectId }: { projectId: string }) {
 					</div>
 				</div>
 			)}
+
+			<Modal
+				isOpen={showUploadModal}
+				onClose={() => setShowUploadModal(false)}
+				title={uploadParentId ? "Subir Nueva Versión" : "Subir Nuevo Documento"}
+			>
+				<form onSubmit={handleUploadSubmit}>
+					<div className="mb-4">
+						<label
+							htmlFor="file-upload"
+							className="block text-sm font-medium text-gray-700 mb-2"
+						>
+							Selecciona un archivo
+						</label>
+						<input
+							id="file-upload"
+							type="file"
+							ref={fileInputRef}
+							className="block w-full text-sm text-gray-500
+                file:mr-4 file:py-2 file:px-4
+                file:rounded-full file:border-0
+                file:text-sm file:font-semibold
+                file:bg-blue-50 file:text-blue-700
+                hover:file:bg-blue-100"
+							required
+						/>
+						{uploadParentId && (
+							<p className="mt-2 text-xs text-gray-500">
+								Este archivo se guardará como la versión más reciente del
+								documento seleccionado.
+							</p>
+						)}
+						{!uploadParentId && (
+							<p className="mt-2 text-xs text-gray-500">
+								Este archivo se subirá como un nuevo documento en el proyecto.
+							</p>
+						)}
+					</div>
+					<div className="flex gap-3 justify-end">
+						<button
+							type="button"
+							onClick={() => setShowUploadModal(false)}
+							className="px-4 py-2 bg-gray-100 rounded text-gray-700 hover:bg-gray-200"
+						>
+							Cancelar
+						</button>
+						<button
+							type="submit"
+							disabled={uploading}
+							className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+						>
+							{uploading ? "Subiendo..." : "Subir"}
+						</button>
+					</div>
+				</form>
+			</Modal>
 		</div>
 	);
 }

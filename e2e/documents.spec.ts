@@ -1,85 +1,139 @@
-import { expect, test } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import { loginViaApi } from "./utils/api-auth";
 
-test.describe("Document Management & Versioning", () => {
-	test("Should upload file and handle versioning", async ({
-		page,
-		request,
-	}) => {
-		// 1. Login
-		await loginViaApi(page, request, "admin", "ADMIN");
+test.describe("Document Management", () => {
+	let projectId: string;
 
-		// 2. Navigate to a project
-		// Create project first to be safe
-		await page.goto("/projects");
-		const timestamp = Date.now();
-		await page.getByRole("button", { name: "Nuevo Proyecto" }).click();
-		await page.fill('input[name="name"]', `Project Docs ${timestamp}`);
-		await page.fill('textarea[name="description"]', "Desc");
-		await page.getByRole("button", { name: "Crear Proyecto", exact: true }).click();
+	test.beforeAll(async ({ request }) => {
+		// 1. Create a project to attach documents to
+		// Login as Admin to ensure permissions
+		const { id: userId } = await loginViaApi(
+			request,
+			"admin_docs@test.com",
+			"password123",
+			"AdminDocs",
+			"ADMIN",
+		);
 
-		// Navigate to Details
-		await page
-			.locator(".bg-white")
-			.filter({ hasText: `Project Docs ${timestamp}` })
-			.first()
-			.getByRole("button", { name: "Ver Proyecto" })
-			.click();
+		const projectRes = await request.post("/api/projects", {
+			data: {
+				name: "Document Test Project",
+				description: "Testing docs",
+				ownerId: userId,
+			},
+		});
+		const projectData = await projectRes.json();
+		projectId = projectData.data.id;
+	});
 
-		// 3. Switch to Documents tab
-		await page.getByRole("button", { name: "Documentos" }).click();
+	test.beforeEach(async ({ page, request }) => {
+		const user = await loginViaApi(
+			request,
+			"admin_docs@test.com",
+			"password123",
+			"AdminDocs",
+			"ADMIN",
+		);
 
-		// 4. Upload a file (Mocked via prompt interception)
-		const fileName = `Doc_Test_${timestamp}.pdf`;
+		// Set local storage to simulate login
+		await page.goto("/");
+		await page.evaluate((u) => {
+			localStorage.setItem("user", JSON.stringify(u));
+		}, user);
 
-		page.on("console", (msg) => console.log(`PAGE LOG: ${msg.text()}`));
+		await page.goto(`/projects/${projectId}`);
+		// Navigate to Documents tab
+		await page.click("text=Documentos");
+	});
 
-		// Setup dialog handler BEFORE action
-		page.on("dialog", async (dialog) => {
-			console.log(
-				`Dialog type: ${dialog.type()}, message: ${dialog.message()}`,
-			);
-			if (dialog.type() === "prompt") {
-				await dialog.accept(fileName);
-			} else {
-				await dialog.accept();
-			}
+	test("should upload a new document", async ({ page }) => {
+		// Click upload button
+		await page.click("text=+ Subir Archivo");
+
+		// Upload file in modal
+		const fileInput = page.locator('input[type="file"]');
+		await fileInput.setInputFiles({
+			name: "test-doc.txt",
+			mimeType: "text/plain",
+			buffer: Buffer.from("Hello World"),
 		});
 
-		// Click Upload
-		const uploadPromise = page.waitForResponse(
-			(resp) => resp.url().includes("/api/documents") && resp.status() === 201,
-		);
-		await page.getByRole("button", { name: "Subir Archivo" }).click();
-		await uploadPromise;
+		// Wait for modal to be visible and stable
+		const modal = page.locator('.fixed.inset-0.z-50');
+		await expect(modal).toBeVisible();
 
-		// Wait for upload list update
-		// Use a loop or wait for API GET response of list
-		const listPromise = page.waitForResponse(
-			(resp) => resp.url().includes("/api/documents") && resp.status() === 200,
-		);
-		// Trigger reload of list manually if needed, or just wait if auto-reload happens (it doesn't, except via handleUpload calling loadDocs)
-		// handleUpload calls loadDocs on success. So listPromise should fire.
-		await listPromise;
+		// Click the submit button specifically inside the modal
+		// The button text is "Subir" (or "Subiendo..." if clicked)
+		// We use a strict selector to avoid matching the "+ Subir Archivo" button behind
+		await modal.locator('button:has-text("Subir")').click();
 
-		await expect(page.getByText(fileName)).toBeVisible({ timeout: 10000 });
+		// Verify document appears in list
+		await expect(page.locator("text=test-doc.txt")).toBeVisible();
+	});
 
-		// 5. Upload SAME file name again to trigger versioning
-		// Reset dialog handler or rely on existing one?
-		// The existing one logic "accept(fileName)" works for prompt, "accept()" works for confirm?
-		// But dialog.accept(string) is only for prompt.
-		// Let's refine the handler above.
+	test("should upload a new version of an existing document", async ({ page }) => {
+		// 1. Ensure a doc exists (reuse flow or create via API)
+		await page.request.post(`/api/documents/${projectId}`, {
+			data: {
+				name: "version-test.txt",
+				type: "TXT",
+				size: 1024,
+			},
+		});
 
-		await page.getByRole("button", { name: "Subir Archivo" }).click();
+		await page.reload();
+		await page.click("text=Documentos");
 
-		// 6. Verify Version Badge
-		// Assuming the UI updates to V2 automatically
-		await expect(page.getByText("V2")).toBeVisible();
+		// Find the document card
+		const docCard = page.locator(".border.rounded-lg").filter({ hasText: "version-test.txt" });
+		await expect(docCard).toBeVisible();
 
-		// 7. Open History
-		await page.getByRole("button", { name: "Historial" }).click();
-		await expect(page.getByText("Historial de Versiones")).toBeVisible();
-		await expect(page.getByText("Versión 1")).toBeVisible();
-		await expect(page.getByText("Versión 2")).toBeVisible();
+		// Click "Nueva Versión"
+		await docCard.locator("text=+ Nueva Versión").click();
+
+		// Upload new version file
+		const fileInput = page.locator('input[type="file"]');
+		await fileInput.setInputFiles({
+			name: "version-test-v2.txt",
+			mimeType: "text/plain",
+			buffer: Buffer.from("Version 2 Content"),
+		});
+
+		// Wait for modal
+		const modal = page.locator('.fixed.inset-0.z-50');
+		await expect(modal).toBeVisible();
+
+		// Click the submit button specifically inside the modal
+		await modal.locator('button:has-text("Subir")').click();
+
+		// Verify V2 badge
+		const badge = docCard.locator("text=V2");
+		await expect(badge).toBeVisible();
+	});
+
+	test("should view version history", async ({ page }) => {
+		// 1. Create doc and version 2 via API
+		const res = await page.request.post(`/api/documents/${projectId}`, {
+			data: { name: "history-test.txt", type: "TXT", size: 100 },
+		});
+		const doc = await res.json();
+		const docId = doc.id;
+
+		await page.request.post(`/api/documents/${docId}/versions`, {
+			data: { name: "history-test.txt", type: "TXT", size: 200 },
+		});
+
+		await page.reload();
+		await page.click("text=Documentos");
+
+		const docCard = page.locator(".border.rounded-lg").filter({ hasText: "history-test.txt" });
+
+		// Click History
+		await docCard.locator("text=Historial").click();
+
+		// Verify History Panel
+		await expect(page.locator("text=Historial de Versiones")).toBeVisible();
+		await expect(page.locator("text=Versión 2")).toBeVisible();
+		await expect(page.locator("text=Versión 1")).toBeVisible();
 	});
 });
