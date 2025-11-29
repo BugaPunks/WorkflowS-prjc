@@ -111,6 +111,8 @@ export const taskAPI = {
 		priority?: string;
 		deadline?: string;
 		status?: string;
+		sprintId?: string;
+		userStoryId?: string;
 	}) => apiRequest("/tasks", { method: "POST", body: JSON.stringify(data) }),
 	update: (id: string, data: unknown) =>
 		apiRequest(`/tasks/${id}`, { method: "PUT", body: JSON.stringify(data) }),

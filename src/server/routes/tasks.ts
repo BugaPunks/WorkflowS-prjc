@@ -60,6 +60,7 @@ router.post("/", async (req, res) => {
 			deadline,
 			status,
 			sprintId,
+			userStoryId,
 		} = req.body;
 
 		if (!title || !projectId) {
@@ -76,6 +77,7 @@ router.post("/", async (req, res) => {
 				deadline: deadline ? new Date(deadline) : null,
 				status: status || "TODO",
 				sprintId: sprintId || null,
+				userStoryId: userStoryId || null,
 			},
 		});
 
@@ -109,6 +111,7 @@ router.put("/:id", async (req, res) => {
 			priority?: string;
 			assigneeId?: string;
 			sprintId?: string;
+			userStoryId?: string;
 			deadline?: Date | null;
 			status?: string;
 			completedAt?: Date | null;

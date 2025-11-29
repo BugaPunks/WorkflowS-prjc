@@ -5,7 +5,7 @@ import {
 	type DropResult,
 } from "@hello-pangea/dnd";
 import { useCallback, useEffect, useState } from "react";
-import { projectAPI, taskAPI } from "@/api/client";
+import { projectAPI, sprintAPI, taskAPI, userStoryAPI } from "@/api/client";
 import { Modal } from "@/components/Modal";
 import { useSession } from "@/hooks/useSession";
 
@@ -27,6 +27,18 @@ interface Project {
 	name: string;
 }
 
+interface Sprint {
+	id: string;
+	name: string;
+	projectId: string;
+}
+
+interface UserStory {
+	id: string;
+	title: string;
+	projectId: string;
+}
+
 const COLUMNS = {
 	TODO: "Pendiente",
 	IN_PROGRESS: "En Progreso",
@@ -37,6 +49,8 @@ export default function Tasks() {
 	const { session: user } = useSession();
 	const [tasks, setTasks] = useState<Task[]>([]);
 	const [projects, setProjects] = useState<Project[]>([]);
+	const [sprints, setSprints] = useState<Sprint[]>([]);
+	const [userStories, setUserStories] = useState<UserStory[]>([]);
 	const [isLoading, setIsLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [showModal, setShowModal] = useState(false);
@@ -45,6 +59,8 @@ export default function Tasks() {
 		description: "",
 		deadline: "",
 		projectId: "",
+		sprintId: "",
+		userStoryId: "",
 	});
 
 	const loadTasks = useCallback(async (userId?: string) => {
@@ -69,12 +85,35 @@ export default function Tasks() {
 		}
 	}, []);
 
+	const loadRelatedData = useCallback(async () => {
+		try {
+			const [sprintsData, storiesData] = await Promise.all([
+				sprintAPI.getAll(),
+				userStoryAPI.getAll(),
+			]);
+			// eslint-disable-next-line
+			const sprintsList = Array.isArray(sprintsData)
+				? sprintsData
+				: (sprintsData as { data: Sprint[] }).data || [];
+			setSprints(sprintsList);
+
+			// eslint-disable-next-line
+			const storiesList = Array.isArray(storiesData)
+				? storiesData
+				: (storiesData as { data: UserStory[] }).data || [];
+			setUserStories(storiesList);
+		} catch (err) {
+			console.error("Error al cargar sprints y HUs:", err);
+		}
+	}, []);
+
 	useEffect(() => {
 		if (user) {
 			loadTasks(user.id);
 			loadProjects(user.id);
+			loadRelatedData();
 		}
-	}, [user, loadTasks, loadProjects]);
+	}, [user, loadTasks, loadProjects, loadRelatedData]);
 
 	const handleCreateTask = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -90,6 +129,8 @@ export default function Tasks() {
 				description: "",
 				deadline: "",
 				projectId: "",
+				sprintId: "",
+				userStoryId: "",
 			});
 			setShowModal(false);
 			await loadTasks(user.id);
@@ -144,6 +185,13 @@ export default function Tasks() {
 	const getTasksByStatus = (status: string) => {
 		return tasks.filter((task) => (task.status || "TODO") === status);
 	};
+
+	const filteredSprints = sprints.filter(
+		(s) => s.projectId === formData.projectId,
+	);
+	const filteredStories = userStories.filter(
+		(s) => s.projectId === formData.projectId,
+	);
 
 	return (
 		<div className="p-8 max-w-7xl mx-auto h-full flex flex-col">
@@ -293,7 +341,12 @@ export default function Tasks() {
 							id="task-project"
 							value={formData.projectId}
 							onChange={(e) =>
-								setFormData({ ...formData, projectId: e.target.value })
+								setFormData({
+									...formData,
+									projectId: e.target.value,
+									sprintId: "",
+									userStoryId: "",
+								})
 							}
 							className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
 							required
@@ -306,6 +359,59 @@ export default function Tasks() {
 							))}
 						</select>
 					</div>
+
+					{formData.projectId && (
+						<>
+							<div className="mb-4">
+								<label
+									htmlFor="task-sprint"
+									className="block text-sm font-medium text-gray-700 mb-2"
+								>
+									Sprint (Opcional)
+								</label>
+								<select
+									id="task-sprint"
+									value={formData.sprintId}
+									onChange={(e) =>
+										setFormData({ ...formData, sprintId: e.target.value })
+									}
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+								>
+									<option value="">Sin Asignar</option>
+									{filteredSprints.map((s) => (
+										<option key={s.id} value={s.id}>
+											{s.name}
+										</option>
+									))}
+								</select>
+							</div>
+
+							<div className="mb-4">
+								<label
+									htmlFor="task-story"
+									className="block text-sm font-medium text-gray-700 mb-2"
+								>
+									Historia de Usuario (Opcional)
+								</label>
+								<select
+									id="task-story"
+									value={formData.userStoryId}
+									onChange={(e) =>
+										setFormData({ ...formData, userStoryId: e.target.value })
+									}
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+								>
+									<option value="">Sin Asignar</option>
+									{filteredStories.map((s) => (
+										<option key={s.id} value={s.id}>
+											{s.title}
+										</option>
+									))}
+								</select>
+							</div>
+						</>
+					)}
+
 					<div className="mb-4">
 						<label
 							htmlFor="task-desc"
