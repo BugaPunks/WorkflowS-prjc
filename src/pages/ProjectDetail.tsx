@@ -682,12 +682,6 @@ interface UserStory {
 	sprintId?: string | null;
 }
 
-interface BacklogItem {
-	id: string;
-	userStoryId: string;
-	userStory: UserStory;
-}
-
 interface Sprint {
 	id: string;
 	projectId: string;
@@ -696,7 +690,6 @@ interface Sprint {
 	endDate: string;
 	status: string;
 	userStories: UserStory[];
-	backlogItems: BacklogItem[];
 }
 
 export default function ProjectDetail() {
