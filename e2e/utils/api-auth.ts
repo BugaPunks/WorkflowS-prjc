@@ -1,12 +1,62 @@
 import type { APIRequestContext, Page } from "@playwright/test";
 
 export async function loginViaApi(
-	request: APIRequestContext,
-	email: string,
-	password = "password123",
-	name = "Test User",
-	role: "ADMIN" | "TEAM_DEVELOPER" | "PRODUCT_OWNER" | "SCRUM_MASTER" = "TEAM_DEVELOPER",
+	ctx: APIRequestContext | Page,
+	arg2?: string | APIRequestContext,
+	arg3?: string,
+	arg4?: string,
+	arg5?: string,
 ) {
+	let request: APIRequestContext;
+	let page: Page | undefined;
+
+	let email = `user${Date.now()}@example.com`;
+	let password = "password123";
+	let name = "Test User";
+	let role: "ADMIN" | "TEAM_DEVELOPER" | "PRODUCT_OWNER" | "SCRUM_MASTER" =
+		"TEAM_DEVELOPER";
+
+	// --- 1. Determine Request & Page ---
+	// Check if ctx is Page (has 'goto')
+	if ("goto" in ctx) {
+		page = ctx as Page;
+		request = page.request;
+
+		// Handle overload: loginViaApi(page, request, email, ...)
+		if (arg2 && typeof arg2 !== "string" && "post" in arg2) {
+			// arg2 is Request, ignore it as we have page.request
+			if (arg3) email = arg3;
+			// Heuristic for the rest: tests often pass (page, request, email, role)
+			// effectively skipping password/name or passing role as password
+			if (arg4) {
+				if (
+					["ADMIN", "TEAM_DEVELOPER", "PRODUCT_OWNER", "SCRUM_MASTER"].includes(
+						arg4,
+					)
+				) {
+					role = arg4 as any;
+				} else {
+					password = arg4;
+				}
+			}
+			if (arg5) name = arg5;
+		} else {
+			// loginViaApi(page, email, password, name, role)
+			if (arg2) email = arg2 as string;
+			if (arg3) password = arg3;
+			if (arg4) name = arg4;
+			if (arg5) role = arg5 as any;
+		}
+	} else {
+		// ctx is Request
+		request = ctx as APIRequestContext;
+		if (arg2 && typeof arg2 === "string") email = arg2;
+		if (arg3) password = arg3;
+		if (arg4) name = arg4;
+		if (arg5) role = arg5 as any;
+	}
+
+	// --- 2. Perform API Auth ---
 	// Register
 	const registerRes = await request.post("/api/auth/register", {
 		data: { name, email, password, role },
@@ -23,11 +73,34 @@ export async function loginViaApi(
 			const data = await loginRes.json();
 			userId = data.user.id;
 		} else {
-			throw new Error(`Auth failed for ${email}`);
+			// If login fails, try with default password if we inferred incorrectly?
+			// Or just throw
+			throw new Error(
+				`Auth failed for ${email} with pass ${password}. Status: ${loginRes.status()}`,
+			);
 		}
 	} else {
 		const data = await registerRes.json();
 		userId = data.user.id;
+	}
+
+	// --- 3. Inject Session into Page (if available) ---
+	if (page) {
+		// We need to be on the domain to set localStorage
+		// Check if we are already there, if not go to /login or /
+		if (page.url() === "about:blank") {
+			await page.goto("/login");
+		}
+
+		await page.evaluate(
+			({ id, name, email, role }) => {
+				localStorage.setItem("user", JSON.stringify({ id, name, email, role }));
+			},
+			{ id: userId, name, email, role },
+		);
+
+		// Reload to apply
+		// await page.reload(); // Optional, caller might prefer to reload
 	}
 
 	return { id: userId, email, name, role };
