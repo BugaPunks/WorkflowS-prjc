@@ -160,7 +160,21 @@ router.post("/:id/members", async (req, res) => {
 				userId,
 				role,
 			},
+			include: {
+				project: { select: { name: true } },
+			},
 		});
+
+		// Notificar al usuario
+		await prisma.notification.create({
+			data: {
+				userId,
+				title: "Nuevo Proyecto Asignado",
+				message: `Has sido añadido al proyecto "${member.project.name}" como ${role}`,
+				type: "PROJECT_ASSIGNED",
+			},
+		});
+
 		res.status(201).json({ data: member });
 	} catch (error) {
 		console.error("Error al asignar miembro:", error);

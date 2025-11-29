@@ -170,6 +170,27 @@ router.post("/conversation/:chatId/messages", async (req, res) => {
 			},
 			include: { user: true },
 		});
+
+		// Notificar a los otros participantes (DM)
+		const chat = await prisma.chat.findUnique({
+			where: { id: chatId },
+			include: { participants: true },
+		});
+
+		if (chat && chat.type === "DIRECT") {
+			const recipients = chat.participants.filter((p) => p.userId !== userId);
+			for (const recipient of recipients) {
+				await prisma.notification.create({
+					data: {
+						userId: recipient.userId,
+						title: "Nuevo Mensaje Directo",
+						message: `${message.user.name} te ha enviado un mensaje`,
+						type: "MESSAGE",
+					},
+				});
+			}
+		}
+
 		res.status(201).json({ data: message });
 	} catch (error) {
 		console.error(error);

@@ -104,10 +104,32 @@ router.put("/:id", async (req, res) => {
 			}
 		}
 
+		const previousStory = await prisma.userStory.findUnique({
+			where: { id: req.params.id },
+			select: { assigneeId: true },
+		});
+
 		const userStory = await prisma.userStory.update({
 			where: { id: req.params.id },
 			data: dataToUpdate,
+			include: { project: { select: { name: true } } },
 		});
+
+		// Notificar si se asignó a alguien nuevo
+		if (
+			dataToUpdate.assigneeId &&
+			dataToUpdate.assigneeId !== previousStory?.assigneeId
+		) {
+			await prisma.notification.create({
+				data: {
+					userId: dataToUpdate.assigneeId,
+					title: "Historia de Usuario Asignada",
+					message: `Se te ha asignado la historia "${userStory.title}" en el proyecto ${userStory.project.name}`,
+					type: "TASK_ASSIGNED", // Reusing type or add STORY_ASSIGNED
+				},
+			});
+		}
+
 		res.json({ data: userStory });
 	} catch {
 		res.status(500).json({ error: "Error al actualizar user story" });
