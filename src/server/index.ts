@@ -1,6 +1,12 @@
+import fs from "node:fs";
 import cors from "cors";
 import express, { type Express } from "express";
 import "dotenv/config";
+
+// Asegurar que existe el directorio de uploads
+if (!fs.existsSync("uploads")) {
+	fs.mkdirSync("uploads");
+}
 
 // Importar rutas
 import authRouter from "./routes/auth";
@@ -23,6 +29,9 @@ const PORT = process.env.API_PORT || 5000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Servir archivos estáticos
+app.use("/uploads", express.static("uploads"));
 
 // Rutas API
 app.use("/api/auth", authRouter);

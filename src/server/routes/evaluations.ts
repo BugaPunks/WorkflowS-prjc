@@ -212,4 +212,58 @@ router.post("/", async (req, res) => {
 	}
 });
 
+// PUT actualizar evaluación (Corregir nota/criterios)
+router.put("/:id", async (req, res) => {
+	try {
+		const { id } = req.params;
+		const { feedback, criteriaScores, score } = req.body;
+
+		// We need at least scores to make sense of an update
+		if (!Array.isArray(criteriaScores)) {
+			return res.status(400).json({ error: "Datos de criterios inválidos" });
+		}
+
+		const updatedEvaluation = await prisma.$transaction(async (tx) => {
+			// Update main fields
+			const _ev = await tx.evaluation.update({
+				where: { id },
+				data: {
+					feedback,
+					score, // Optional: if frontend calculates it, otherwise we can sum criteria
+				},
+			});
+
+			// Update criteria
+			// Strategy: Delete old details and re-insert (simplest for full overwrite)
+			// OR upsert if we had stable IDs for evaluation_criteria (we do, but frontend might not send them)
+			// Re-inserting is safer to match the "form state".
+
+			await tx.evaluationCriteria.deleteMany({
+				where: { evaluationId: id },
+			});
+
+			for (const cs of criteriaScores) {
+				await tx.evaluationCriteria.create({
+					data: {
+						evaluationId: id,
+						criteriaId: cs.criteriaId,
+						score: cs.score,
+						comment: cs.comment,
+					},
+				});
+			}
+
+			return tx.evaluation.findUnique({
+				where: { id },
+				include: { criteria: true },
+			});
+		});
+
+		res.json({ data: updatedEvaluation });
+	} catch (error) {
+		console.error("Error updating evaluation:", error);
+		res.status(500).json({ error: "Error al actualizar evaluación" });
+	}
+});
+
 export default router;

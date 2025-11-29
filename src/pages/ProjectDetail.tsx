@@ -219,16 +219,14 @@ function DocumentsSection({ projectId }: { projectId: string }) {
 			const url = uploadParentId
 				? `/api/documents/${uploadParentId}/versions`
 				: `/api/documents/${projectId}`;
-			const body = {
-				name: file.name,
-				type: file.name.split(".").pop()?.toUpperCase() || "FILE",
-				size: file.size,
-			};
+
+			const formData = new FormData();
+			formData.append("file", file);
 
 			const response = await fetch(url, {
 				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify(body),
+				// headers: Content-Type is set automatically for FormData
+				body: formData,
 			});
 
 			if (!response.ok) {

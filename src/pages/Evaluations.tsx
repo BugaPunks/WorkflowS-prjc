@@ -2,6 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSession } from "@/hooks/useSession";
 
+interface CriteriaScore {
+	id: string;
+	score: number;
+	comment: string;
+	criteria: { name: string; maxScore: number };
+}
+
 interface Evaluation {
 	id: string;
 	score: number;
@@ -11,6 +18,7 @@ interface Evaluation {
 	task?: { title: string };
 	sprint?: { name: string };
 	evaluator: { name: string };
+	criteria?: CriteriaScore[]; // Expanded details
 }
 
 interface PendingTask {
@@ -78,78 +86,85 @@ export default function Evaluations() {
 		<div className="p-8 max-w-7xl mx-auto">
 			<h1 className="text-3xl font-bold text-gray-900 mb-6">
 				{user?.role === "ADMIN"
-					? "Tareas Pendientes de Calificar"
+					? "Gestión de Calificaciones"
 					: "Mis Calificaciones"}
 			</h1>
 
 			{user?.role === "ADMIN" ? (
-				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-					{pendingTasks.length === 0 ? (
-						<div className="col-span-full text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-							<p className="text-gray-500">
-								No hay tareas completadas pendientes de revisión.
-							</p>
-						</div>
-					) : (
-						pendingTasks.map((task) => (
-							<div
-								key={task.id}
-								className="bg-white p-6 rounded-lg shadow border border-gray-200 hover:shadow-md transition-shadow"
-							>
-								<div className="mb-4">
-									<h3
-										className="font-bold text-lg text-gray-800 truncate"
-										title={task.title}
-									>
-										{task.title}
-									</h3>
-									<p className="text-sm text-gray-500 truncate">
-										{task.project.name}
-									</p>
-									{task.assignee && (
-										<p className="text-xs text-gray-400 mt-1">
-											De: {task.assignee.name}
+				<div className="space-y-8">
+					<div className="flex justify-between items-center border-b pb-4">
+						<h2 className="text-xl font-semibold text-gray-800">
+							Pendientes de Revisión
+						</h2>
+					</div>
+					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+						{pendingTasks.length === 0 ? (
+							<div className="col-span-full text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+								<p className="text-gray-500">
+									No hay tareas completadas pendientes de revisión.
+								</p>
+							</div>
+						) : (
+							pendingTasks.map((task) => (
+								<div
+									key={task.id}
+									className="bg-white p-6 rounded-lg shadow border border-gray-200 hover:shadow-md transition-shadow"
+								>
+									<div className="mb-4">
+										<h3
+											className="font-bold text-lg text-gray-800 truncate"
+											title={task.title}
+										>
+											{task.title}
+										</h3>
+										<p className="text-sm text-gray-500 truncate">
+											{task.project.name}
 										</p>
+										{task.assignee && (
+											<p className="text-xs text-gray-400 mt-1">
+												De: {task.assignee.name}
+											</p>
+										)}
+									</div>
+									<div className="flex justify-between items-center mt-4">
+										<span className="text-xs font-bold bg-green-100 text-green-800 px-2 py-1 rounded">
+											{task.status}
+										</span>
+										<button
+											type="button"
+											onClick={() =>
+												navigate(
+													`/projects/${task.projectId}/tasks/${task.id}/grade`,
+												)
+											}
+											className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+										>
+											Ir a Calificar →
+										</button>
+									</div>
+									{task.evaluations && task.evaluations.length > 0 && (
+										<div className="mt-4 pt-3 border-t border-gray-100 text-xs text-green-600 flex items-center gap-1">
+											<svg
+												className="w-4 h-4"
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+											>
+												<title>Check</title>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M5 13l4 4L19 7"
+												/>
+											</svg>
+											Ya tiene {task.evaluations.length} evaluación(es).
+										</div>
 									)}
 								</div>
-								<div className="flex justify-between items-center mt-4">
-									<span className="text-xs font-bold bg-green-100 text-green-800 px-2 py-1 rounded">
-										{task.status}
-									</span>
-									<button
-										type="button"
-										onClick={() =>
-											navigate(
-												`/projects/${task.projectId}/tasks/${task.id}/grade`,
-											)
-										}
-										className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
-									>
-										Ir a Calificar →
-									</button>
-								</div>
-								{task.evaluations && task.evaluations.length > 0 && (
-									<div className="mt-4 pt-3 border-t border-gray-100 text-xs text-green-600 flex items-center gap-1">
-										<svg
-											className="w-4 h-4"
-											fill="none"
-											viewBox="0 0 24 24"
-											stroke="currentColor"
-										>
-											<title>Check</title>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												strokeWidth={2}
-												d="M5 13l4 4L19 7"
-											/>
-										</svg>
-										Ya tiene {task.evaluations.length} evaluación(es).
-									</div>
-								)}
-							</div>
-						))
-					)}
+							))
+						)}
+					</div>
 				</div>
 			) : (
 				<div className="space-y-4">
@@ -191,6 +206,35 @@ export default function Evaluations() {
 											Evaluado por {grade.evaluator.name} •{" "}
 											{new Date(grade.createdAt).toLocaleDateString()}
 										</p>
+
+										{/* Criteria Breakdown */}
+										{grade.criteria && grade.criteria.length > 0 && (
+											<div className="mt-4 pt-4 border-t border-dashed border-gray-200">
+												<h4 className="text-xs font-bold text-gray-500 uppercase mb-2">
+													Detalle de Rúbrica
+												</h4>
+												<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+													{grade.criteria.map((c) => (
+														<div
+															key={c.id}
+															className="bg-gray-50 rounded p-2 text-sm"
+														>
+															<div className="flex justify-between font-medium">
+																<span>{c.criteria.name}</span>
+																<span>
+																	{c.score}/{c.criteria.maxScore}
+																</span>
+															</div>
+															{c.comment && (
+																<p className="text-xs text-gray-500 mt-1 italic">
+																	"{c.comment}"
+																</p>
+															)}
+														</div>
+													))}
+												</div>
+											</div>
+										)}
 									</div>
 									<div className="text-right flex flex-col items-center justify-center bg-blue-50 p-3 rounded-lg min-w-[80px]">
 										<span className="block text-3xl font-bold text-blue-600">

@@ -1,7 +1,21 @@
 import { Router } from "express";
+import multer from "multer";
 import { prisma } from "../db";
 
 const router = Router();
+
+// Configuración de Multer para almacenamiento local
+const storage = multer.diskStorage({
+	destination: (_req, _file, cb) => {
+		cb(null, "uploads/");
+	},
+	filename: (_req, file, cb) => {
+		const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+		cb(null, `${uniqueSuffix}-${file.originalname}`);
+	},
+});
+
+const upload = multer({ storage });
 
 // GET documentos de un proyecto (solo las versiones más recientes)
 router.get("/:projectId", async (req, res) => {
@@ -42,12 +56,18 @@ router.get("/:projectId", async (req, res) => {
 });
 
 // POST subir documento (Root)
-router.post("/:projectId", async (req, res) => {
+router.post("/:projectId", upload.single("file"), async (req, res) => {
 	try {
 		const { projectId } = req.params;
-		const { name, type, size } = req.body;
+		const file = req.file;
 
-		if (!name) return res.status(400).json({ error: "Nombre requerido" });
+		if (!file) return res.status(400).json({ error: "No se envió archivo" });
+
+		const name = Buffer.from(file.originalname, "latin1").toString("utf8"); // Handle potential encoding issues
+		const type = file.mimetype.split("/").pop()?.toUpperCase() || "FILE";
+		const size = file.size;
+		// Ensure URL is accessible from frontend (served via express.static at /uploads)
+		const url = `${req.protocol}://${req.get("host")}/uploads/${file.filename}`;
 
 		// Check if document with same name exists in this project (and is a root document)
 		const existingDoc = await prisma.document.findFirst({
@@ -65,11 +85,6 @@ router.post("/:projectId", async (req, res) => {
 		});
 
 		if (existingDoc) {
-			// If it exists, we could either return error or create version automatically.
-			// To be explicit, let's treat it as "conflict" unless the user used the "new version" endpoint.
-			// But for backward compatibility/simplicity, if they just upload same name, we can create version.
-			// Let's create version to be friendly.
-
 			const lastVersion =
 				existingDoc.versions.length > 0
 					? existingDoc.versions[0].version
@@ -80,9 +95,9 @@ router.post("/:projectId", async (req, res) => {
 				data: {
 					projectId,
 					name,
-					type: type || "FILE",
-					size: size || 0,
-					url: `https://fake-storage.com/${projectId}/${name}?v=${newVersion}`,
+					type,
+					size,
+					url,
 					version: newVersion,
 					parentId: existingDoc.id,
 				},
@@ -95,25 +110,27 @@ router.post("/:projectId", async (req, res) => {
 			data: {
 				projectId,
 				name,
-				type: type || "FILE",
-				size: size || 0,
-				url: `https://fake-storage.com/${projectId}/${name}?v=1`,
+				type,
+				size,
+				url,
 				version: 1,
 			},
 		});
 
 		res.status(201).json(document);
-	} catch (_error) {
-		console.error(_error);
+	} catch (error) {
+		console.error(error);
 		res.status(500).json({ error: "Error al subir documento" });
 	}
 });
 
 // POST subir nueva versión explícita
-router.post("/:id/versions", async (req, res) => {
+router.post("/:id/versions", upload.single("file"), async (req, res) => {
 	try {
 		const { id } = req.params; // Parent Document ID
-		const { name, type, size } = req.body;
+		const file = req.file;
+
+		if (!file) return res.status(400).json({ error: "No se envió archivo" });
 
 		// Find parent
 		const parentDoc = await prisma.document.findUnique({
@@ -132,8 +149,6 @@ router.post("/:id/versions", async (req, res) => {
 				.json({ error: "Documento original no encontrado" });
 		}
 
-		// If the user tries to add version to a child, redirect to parent?
-		// Better to enforce that :id is the parent.
 		if (parentDoc.parentId) {
 			return res.status(400).json({
 				error:
@@ -147,16 +162,18 @@ router.post("/:id/versions", async (req, res) => {
 				: parentDoc.version;
 		const newVersion = lastVersion + 1;
 
-		// If name is not provided, use parent name
-		const finalName = name || parentDoc.name;
+		const name = Buffer.from(file.originalname, "latin1").toString("utf8");
+		const type = file.mimetype.split("/").pop()?.toUpperCase() || "FILE";
+		const size = file.size;
+		const url = `${req.protocol}://${req.get("host")}/uploads/${file.filename}`;
 
 		const document = await prisma.document.create({
 			data: {
 				projectId: parentDoc.projectId,
-				name: finalName,
-				type: type || parentDoc.type,
-				size: size || parentDoc.size,
-				url: `https://fake-storage.com/${parentDoc.projectId}/${finalName}?v=${newVersion}`,
+				name,
+				type,
+				size,
+				url,
 				version: newVersion,
 				parentId: parentDoc.id,
 			},
