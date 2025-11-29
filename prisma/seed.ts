@@ -4,9 +4,9 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Starting seed...');
+  console.log('🌱 Starting COMPREHENSIVE seed (Enhanced for Doc Mgmt)...');
 
-  // 1. Create Users
+  // --- 1. USERS ---
   const password = await bcrypt.hash('password123', 10);
   const adminPassword = await bcrypt.hash('admin123', 10);
 
@@ -25,7 +25,7 @@ async function main() {
   const users = [
     { email: 'dev1@workflow.com', name: 'Ana Developer', role: 'TEAM_DEVELOPER' },
     { email: 'dev2@workflow.com', name: 'Carlos Backend', role: 'TEAM_DEVELOPER' },
-    { email: 'sm@workflow.com', name: 'Sarah Master', role: 'TEAM_DEVELOPER' }, // System role is dev/student
+    { email: 'sm@workflow.com', name: 'Sarah Master', role: 'TEAM_DEVELOPER' },
     { email: 'po@workflow.com', name: 'Pedro Owner', role: 'TEAM_DEVELOPER' },
   ];
 
@@ -47,9 +47,7 @@ async function main() {
 
   const [dev1, dev2, sm, po] = createdUsers;
 
-  // 2. Create Global Rubric
-  // Use create explicitly but check if similar name exists to prevent duplicates on re-runs if needed.
-  // However, this script is mostly for dev. Let's create a new one every time or just one.
+  // --- 2. GLOBAL RUBRIC ---
   const globalRubric = await prisma.rubric.create({
     data: {
       name: 'Rúbrica General de Desarrollo ' + Date.now(),
@@ -62,15 +60,13 @@ async function main() {
         ],
       },
     },
-    include: { // Include criteria in the response
-        criteria: true
-    }
+    include: { criteria: true }
   });
 
-  // 3. Project 1: Sistema de Gestión Académica (Active)
+  // --- 3. PROJECT 1: Sistema de Gestión Académica (ACTIVE) ---
   const project1 = await prisma.project.create({
     data: {
-      name: 'Sistema de Gestión Académica ' + Date.now(), // Unique name
+      name: 'Sistema de Gestión Académica ' + Date.now(),
       description: 'Plataforma para gestión de notas y asistencia',
       status: 'ACTIVE',
       ownerId: admin.id,
@@ -87,7 +83,103 @@ async function main() {
     },
   });
 
-  // Project 1 Rubric
+  // 3a. Project 1 Documents (Enhanced Versioning)
+  // 3a.1 Spec Chain (3 versions)
+  const docSpecV1 = await prisma.document.create({
+    data: {
+      projectId: project1.id,
+      name: 'Especificación_Requisitos_v1.pdf',
+      url: 'https://example.com/sga/specs/v1.pdf',
+      type: 'application/pdf',
+      size: 2048,
+      version: 1,
+    }
+  });
+
+  const docSpecV2 = await prisma.document.create({
+    data: {
+      projectId: project1.id,
+      name: 'Especificación_Requisitos_v2.pdf',
+      url: 'https://example.com/sga/specs/v2.pdf',
+      type: 'application/pdf',
+      size: 2500,
+      version: 2,
+      parentId: docSpecV1.id,
+    }
+  });
+
+  await prisma.document.create({
+    data: {
+      projectId: project1.id,
+      name: 'Especificación_Requisitos_FINAL.pdf',
+      url: 'https://example.com/sga/specs/final.pdf',
+      type: 'application/pdf',
+      size: 3100,
+      version: 3,
+      parentId: docSpecV2.id,
+    }
+  });
+
+  // 3a.2 Architecture Diagrams (Single versions)
+  await prisma.document.create({
+    data: {
+      projectId: project1.id,
+      name: 'Diagrama_Clases.png',
+      url: 'https://example.com/sga/diagrams/classes.png',
+      type: 'image/png',
+      size: 500,
+      version: 1,
+    }
+  });
+
+  await prisma.document.create({
+    data: {
+      projectId: project1.id,
+      name: 'Diagrama_ER.png',
+      url: 'https://example.com/sga/diagrams/er.png',
+      type: 'image/png',
+      size: 550,
+      version: 1,
+    }
+  });
+
+  // 3a.3 Technical Guides (DOCX)
+  await prisma.document.create({
+    data: {
+      projectId: project1.id,
+      name: 'Guia_Instalacion.docx',
+      url: 'https://example.com/sga/docs/install.docx',
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      size: 1500,
+      version: 1,
+    }
+  });
+
+  // 3b. Project 1 Chat
+  await prisma.chat.create({
+    data: {
+      projectId: project1.id,
+      type: 'PROJECT',
+      title: 'General SGA',
+      participants: {
+        create: [
+          { userId: dev1.id },
+          { userId: dev2.id },
+          { userId: sm.id },
+          { userId: po.id },
+        ]
+      },
+      messages: {
+        create: [
+          { userId: po.id, content: 'Bienvenidos al proyecto SGA. El objetivo es entregar el MVP en 2 meses.' },
+          { userId: sm.id, content: 'Entendido. Empezamos con el Sprint 1 mañana.' },
+          { userId: dev1.id, content: 'Listo para empezar con el backend.' },
+        ]
+      }
+    }
+  });
+
+  // 3c. Project 1 Rubric
   const p1Rubric = await prisma.rubric.create({
     data: {
       projectId: project1.id,
@@ -100,12 +192,10 @@ async function main() {
         ],
       },
     },
-    include: {
-        criteria: true
-    }
+    include: { criteria: true }
   });
 
-  // Sprint 1 (Completed)
+  // 3d. Sprint 1 (Completed) & Retrospectives
   const sprint1 = await prisma.sprint.create({
     data: {
       projectId: project1.id,
@@ -117,7 +207,16 @@ async function main() {
     },
   });
 
-  // Stories for Sprint 1
+  // Retrospectives for Sprint 1
+  await prisma.retrospectiveItem.createMany({
+    data: [
+      { sprintId: sprint1.id, userId: dev1.id, type: 'GOOD', content: 'Logramos implementar JWT a tiempo.' },
+      { sprintId: sprint1.id, userId: dev2.id, type: 'BAD', content: 'La documentación de la API se retrasó.' },
+      { sprintId: sprint1.id, userId: sm.id, type: 'ACTION', content: 'Mejorar la comunicación en las dailies.' },
+    ]
+  });
+
+  // 3e. Stories & Tasks Sprint 1
   const story1 = await prisma.userStory.create({
     data: {
       projectId: project1.id,
@@ -132,7 +231,6 @@ async function main() {
     },
   });
 
-  // Tasks for Story 1
   const task1 = await prisma.task.create({
     data: {
       projectId: project1.id,
@@ -146,8 +244,7 @@ async function main() {
     },
   });
 
-  // Evaluation for Task 1
-  // Use criteria IDs from the included result
+  // 3f. Evaluations (Task & Sprint)
   if (globalRubric.criteria.length > 0) {
       await prisma.evaluation.create({
         data: {
@@ -166,8 +263,6 @@ async function main() {
       });
   }
 
-
-  // Evaluation for Sprint 1
   if (p1Rubric.criteria.length >= 2) {
       await prisma.evaluation.create({
         data: {
@@ -187,8 +282,7 @@ async function main() {
       });
   }
 
-
-  // Sprint 2 (Active)
+  // 3g. Sprint 2 (Active)
   const sprint2 = await prisma.sprint.create({
     data: {
       projectId: project1.id,
@@ -224,7 +318,7 @@ async function main() {
     },
   });
 
-  // 4. Project 2: E-Commerce App (Planning)
+  // --- 4. PROJECT 2: E-Commerce App (PLANNING) ---
   const project2 = await prisma.project.create({
     data: {
       name: 'App de Comercio Electrónico ' + Date.now(),
@@ -242,7 +336,18 @@ async function main() {
     },
   });
 
-  // Backlog for Project 2
+  // 4a. Documents for Project 2
+  await prisma.document.create({
+    data: {
+      projectId: project2.id,
+      name: 'Wireframes_Home.fig',
+      url: 'https://example.com/ecommerce/wireframes.fig',
+      type: 'application/octet-stream',
+      size: 5000,
+      version: 1,
+    }
+  });
+
   await prisma.userStory.create({
     data: {
       projectId: project2.id,
@@ -264,7 +369,55 @@ async function main() {
     },
   });
 
-  console.log('✅ Seed completed successfully');
+  // --- 5. DIRECT MESSAGING & NOTIFICATIONS ---
+
+  // Direct Chat (DM) between Dev1 and Scrum Master
+  await prisma.chat.create({
+    data: {
+      type: 'DIRECT',
+      participants: {
+        create: [
+          { userId: dev1.id },
+          { userId: sm.id }
+        ]
+      },
+      messages: {
+        create: [
+          { userId: sm.id, content: 'Hola Ana, ¿cómo vas con el login?' },
+          { userId: dev1.id, content: 'Todo bien, ya casi termino los tests.' }
+        ]
+      }
+    }
+  });
+
+  // Notifications
+  await prisma.notification.createMany({
+    data: [
+      {
+        userId: dev1.id,
+        title: 'Nueva Tarea Asignada',
+        message: 'Se te ha asignado la tarea: Diseñar tabla de usuarios',
+        type: 'TASK_ASSIGNED',
+        read: true
+      },
+      {
+        userId: dev1.id,
+        title: 'Evaluación Completada',
+        message: 'Tu tarea "Diseñar tabla de usuarios" ha sido calificada.',
+        type: 'EVALUATION_COMPLETED',
+        read: false
+      },
+      {
+        userId: sm.id,
+        title: 'Nuevo Mensaje',
+        message: 'Ana Developer te ha enviado un mensaje.',
+        type: 'MESSAGE',
+        read: false
+      }
+    ]
+  });
+
+  console.log('✅ Comprehensive Seed completed successfully');
 }
 
 main()
