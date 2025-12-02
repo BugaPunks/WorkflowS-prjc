@@ -52,7 +52,7 @@ test.describe("Sprint Kanban Board", () => {
 			},
 		});
 		const projectData = await projectRes.json();
-		const projectId = projectData.data.id;
+		const projectId = projectData.id || projectData.data?.id;
 
 		// Create Sprint via API
 		const sprintRes = await request.post("/api/sprints", {

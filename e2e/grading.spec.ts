@@ -10,8 +10,8 @@ test.describe("Grading System", () => {
 
   test.beforeEach(async ({ page }) => {
     const request = page.request;
-    teacher = await loginViaApi(request, `teacher-${Date.now()}@example.com`, "pass", "Teacher", "ADMIN");
-    student = await loginViaApi(request, `student-${Date.now()}@example.com`, "pass", "Student", "TEAM_DEVELOPER");
+    teacher = await loginViaApi(request, `teacher-${Date.now()}@example.com`, "password123", "Teacher", "ADMIN");
+    student = await loginViaApi(request, `student-${Date.now()}@example.com`, "password123", "Student", "TEAM_DEVELOPER");
 
     // Create Project
     const pRes = await request.post("http://localhost:5000/api/projects", {
@@ -54,8 +54,8 @@ test.describe("Grading System", () => {
     await page.goto("/evaluations");
 
     // Find task
-    await expect(page.getByText("Task to Grade")).toBeVisible();
-    await page.getByText("Ir a Calificar").click();
+    await expect(page.getByText("Task to Grade").first()).toBeVisible();
+    await page.getByText("Ir a Calificar").first().click();
 
     // Check if grading page loaded (Evaluation form)
     // Assuming GradingView exists and has inputs

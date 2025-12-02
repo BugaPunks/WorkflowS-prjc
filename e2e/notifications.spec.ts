@@ -7,7 +7,7 @@ test.describe("Notification System", () => {
 		request,
 	}) => {
 		// 1. Login as Admin
-		const { userId, userEmail } = await loginViaApi(
+		const { id: userId, email: userEmail } = await loginViaApi(
 			page,
 			request,
 			"admin",
@@ -61,7 +61,10 @@ test.describe("Notification System", () => {
 
 		// 4. Check Notification Bell
 		// It polls every 10s or similar.
-		// Or trigger it manually if possible.
+		// The frontend might need a reload to fetch new notifications if not using SSE/WebSockets or aggressive polling.
+		// The memory says: "The NotificationBell.tsx component relies on polling or session state to fetch notifications. In E2E tests ... a page.reload() is often necessary"
+
+		await page.reload();
 
 		// Since we just created it, we might need to wait.
 		// For testing speed, we can check if the bell badge appears.
@@ -78,15 +81,16 @@ test.describe("Notification System", () => {
 		// Reload if necessary (notifications might only fetch on load or poll)
 		// Let's try to reload if not visible after a short wait?
 		// Or just wait longer.
-		await expect(page.getByText("Nueva Tarea Asignada")).toBeVisible({
+		// Use .first() to avoid strict mode violation if multiple notifications exist
+		await expect(page.getByText("Nueva Tarea Asignada").first()).toBeVisible({
 			timeout: 15000,
 		});
 		await expect(
-			page.getByText(`Se te ha asignado la tarea: ${taskTitle}`),
+			page.getByText(`Se te ha asignado la tarea: ${taskTitle}`).first(),
 		).toBeVisible();
 
 		// 7. Mark as read
-		await page.getByText("Nueva Tarea Asignada").click();
+		await page.getByText("Nueva Tarea Asignada").first().click();
 
 		// 8. Verify badge update
 		// Close and reopen to refresh state if needed, or observe UI change

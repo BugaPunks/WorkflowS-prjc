@@ -18,7 +18,7 @@ test.describe("Full Project Lifecycle: Teacher and Student", () => {
 		console.log("--- Step 1: Teacher Setup ---");
 
 		// Login as Teacher (Admin)
-		const { userId: teacherId } = await loginViaApi(
+		const { id: teacherId } = await loginViaApi(
 			page,
 			request,
 			"docente",
@@ -27,7 +27,24 @@ test.describe("Full Project Lifecycle: Teacher and Student", () => {
 
 		// 1.1 Create Project (UI)
 		await page.goto("/projects");
-		await page.getByRole("button", { name: "Nuevo Proyecto" }).click();
+		// Wait for load state to ensure hydration if using client side
+		await page.waitForLoadState('networkidle');
+
+		// Debug: Screenshot or check URL
+		// await page.screenshot({ path: 'debug-projects.png' });
+
+		// It might be that "Nuevo Proyecto" button is not visible if list is empty or some other state.
+		// Or maybe the button name is slightly different (case sensitive).
+		// Try a more generic selector or debug.
+
+		// If fails, try finding by text
+		const btn = page.getByRole("button", { name: "Nuevo Proyecto" });
+		if (!await btn.isVisible()) {
+			console.log('Button not found by role, trying text');
+			await page.click('text=Nuevo Proyecto');
+		} else {
+			await btn.click();
+		}
 		await page.fill('input[name="name"]', projectName);
 		await page.fill('textarea[name="description"]', "Proyecto de prueba E2E");
 		await page.getByRole("button", { name: "Crear Proyecto", exact: true }).click();

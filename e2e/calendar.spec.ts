@@ -7,7 +7,7 @@ test.describe("Calendar Module", () => {
 		request,
 	}) => {
 		// 1. Login (Browser & API)
-		const { userId, userEmail } = await loginViaApi(
+		const { id: userId, email: userEmail } = await loginViaApi(
 			page,
 			request,
 			"admin",
@@ -40,7 +40,7 @@ test.describe("Calendar Module", () => {
 		);
 		expect(projectRes.ok()).toBeTruthy();
 		const projectData = await projectRes.json();
-		const projectId = projectData.data ? projectData.data.id : projectData.id;
+		const projectId = projectData.id || projectData.data?.id;
 
 		// Create Sprint
 		const sprintRes = await request.post("http://localhost:5000/api/sprints", {

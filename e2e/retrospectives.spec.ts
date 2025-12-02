@@ -48,7 +48,7 @@ test.describe("Retrospective Board", () => {
 			},
 		);
 		const projectData = await projectRes.json();
-		projectId = projectData.data.id;
+		projectId = projectData.id || projectData.data?.id;
 
 		// Create Sprint (Required for Retro)
 		const sprintRes = await request.post("http://localhost:5000/api/sprints", {
@@ -60,11 +60,16 @@ test.describe("Retrospective Board", () => {
 			},
 		});
 		const sprintData = await sprintRes.json();
-		_sprintId = sprintData.data.id;
+		_sprintId = sprintData.id || sprintData.data?.id;
 
 		// Navigate to Project -> Retro
 		await page.goto(`/projects/${projectId}`);
-		await page.getByRole("button", { name: "Retrospectiva" }).click();
+		await page.waitForLoadState('networkidle');
+
+		// Wait for button with timeout
+		const retroBtn = page.getByRole("button", { name: "Retrospectiva" });
+		await expect(retroBtn).toBeVisible({ timeout: 10000 });
+		await retroBtn.click();
 
 		// 1. Add "Good" Item
 		await page.getByRole("button", { name: "+ Añadir Nota" }).first().click();

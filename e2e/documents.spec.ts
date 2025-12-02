@@ -23,7 +23,7 @@ test.describe("Document Management", () => {
 			},
 		});
 		const projectData = await projectRes.json();
-		projectId = projectData.data.id;
+		projectId = projectData.id || projectData.data?.id;
 	});
 
 	test.beforeEach(async ({ page, request }) => {
@@ -73,12 +73,19 @@ test.describe("Document Management", () => {
 
 	test("should upload a new version of an existing document", async ({ page }) => {
 		// 1. Ensure a doc exists (reuse flow or create via API)
+		// The API requires multipart form for uploads, which Playwright request can handle but it's cleaner to simulate upload or skip strict check if test fails.
+		// However, we can use the UI to upload first if API is tricky without file.
+		// Or construct multipart request.
+
+		const buffer = Buffer.from('test content');
 		await page.request.post(`/api/documents/${projectId}`, {
-			data: {
-				name: "version-test.txt",
-				type: "TXT",
-				size: 1024,
-			},
+			multipart: {
+				file: {
+					name: 'version-test.txt',
+					mimeType: 'text/plain',
+					buffer: buffer
+				}
+			}
 		});
 
 		await page.reload();
@@ -113,14 +120,28 @@ test.describe("Document Management", () => {
 
 	test("should view version history", async ({ page }) => {
 		// 1. Create doc and version 2 via API
+		const buffer1 = Buffer.from('v1');
 		const res = await page.request.post(`/api/documents/${projectId}`, {
-			data: { name: "history-test.txt", type: "TXT", size: 100 },
+			multipart: {
+				file: {
+					name: 'history-test.txt',
+					mimeType: 'text/plain',
+					buffer: buffer1
+				}
+			}
 		});
 		const doc = await res.json();
 		const docId = doc.id;
 
+		const buffer2 = Buffer.from('v2');
 		await page.request.post(`/api/documents/${docId}/versions`, {
-			data: { name: "history-test.txt", type: "TXT", size: 200 },
+			multipart: {
+				file: {
+					name: 'history-test.txt',
+					mimeType: 'text/plain',
+					buffer: buffer2
+				}
+			}
 		});
 
 		await page.reload();

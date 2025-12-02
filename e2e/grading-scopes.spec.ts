@@ -16,11 +16,11 @@ test.describe('Grading Scopes (Project & Sprint)', () => {
       data: {
         name: `Grading Project ${Date.now()}`,
         description: 'Testing grading scopes',
-        ownerId: adminUser.userId
+        ownerId: adminUser.id // Corrected from adminUser.userId to adminUser.id
       }
     });
     const projData = await projRes.json();
-    project = projData.data;
+    project = projData.data || projData; // Handle both wrapped and unwrapped
 
     // 3. Create Sprint
     const sprintRes = await request.post('http://localhost:5000/api/sprints', {

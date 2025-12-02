@@ -21,11 +21,28 @@ test.describe("Chat System", () => {
 			},
 		);
 		const projectData = await projectRes.json();
-		const projectId = projectData.data.id;
+		const projectId = projectData.id || projectData.data?.id;
 
 		// Go to Chat
 		await page.goto(`/projects/${projectId}`);
-		await page.getByRole("button", { name: "Chat" }).click();
+
+		// Wait for title
+		// The title selector name construction might be sensitive to whitespace or casing
+		// Or maybe the project name is slightly different.
+		// Let's use a more generic check or debug
+		// await expect(page.getByRole('heading', { name: `Chat Project ${timestamp}` })).toBeVisible();
+
+		// Wait for content load more robustly
+		await page.waitForLoadState('networkidle');
+
+		// Click Chat tab - use generic locator if specific text fails due to layout
+		const chatBtn = page.getByRole("button", { name: "Chat" });
+		if (await chatBtn.isVisible()) {
+			await chatBtn.click();
+		} else {
+			// Fallback
+			await page.click('text=Chat');
+		}
 
 		// Send Message
 		const message = `Hello World ${timestamp}`;

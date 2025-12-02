@@ -4,7 +4,8 @@ import { loginViaApi } from "./utils/api-auth";
 test.describe("Rubrics and Grading Flow", () => {
 	test("should create a global rubric and grade a task", async ({ page }) => {
 		// 1. Login as Admin (Docente)
-		const { userId } = await loginViaApi(page);
+		const { id: userId } = await loginViaApi(page);
+		console.log('Logged in user:', userId);
 
 		// 2. Create a Global Rubric
 		await page.goto("/rubrics");
@@ -30,6 +31,7 @@ test.describe("Rubrics and Grading Flow", () => {
 
 		// 3. Create a Project (to have tasks)
 		const projectName = `Project For Grading ${Date.now()}`;
+		console.log('Creating project with owner:', userId);
 		const projectRes = await page.request.post("/api/projects", {
 			data: {
 				name: projectName,
@@ -38,7 +40,12 @@ test.describe("Rubrics and Grading Flow", () => {
 			}
 		});
 		const projectData = await projectRes.json();
-		const projectId = projectData.data.id;
+		if (!projectRes.ok()) {
+			console.log('Create Project Failed:', projectData);
+		}
+		const projectId = projectData.id || projectData.data?.id;
+		// If project creation fails or structure is different, log it
+		if (!projectId) console.log("Project ID missing in", projectData);
 
 		// 4. Create a Task via API
 		const taskTitle = `Task to Grade ${Date.now()}`;
@@ -50,6 +57,9 @@ test.describe("Rubrics and Grading Flow", () => {
 				priority: "HIGH"
 			}
 		});
+		if (!taskRes.ok()) {
+			console.log("Create Task Failed:", await taskRes.json());
+		}
 		expect(taskRes.ok()).toBeTruthy();
 		const taskData = await taskRes.json();
 		// Tasks endpoint returns the object directly, not wrapped in data

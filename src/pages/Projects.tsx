@@ -96,7 +96,8 @@ export default function Projects() {
 		}
 	};
 
-	const canCreateProject = user?.role === "ADMIN";
+	const canCreateProject =
+		user?.role === "ADMIN" || user?.role === "PRODUCT_OWNER";
 
 	return (
 		<div className="animate-in fade-in duration-500">

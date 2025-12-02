@@ -56,6 +56,43 @@ export async function loginViaApi(
 		if (arg5) role = arg5 as any;
 	}
 
+	// --- Fix for shortcuts and validation ---
+	if (email === "admin") {
+		email = "admin@workflow.com";
+		if (password === "password123") password = "admin123";
+		role = "ADMIN";
+	} else if (email === "docente") {
+		email = "admin@workflow.com";
+		if (password === "password123") password = "admin123";
+		role = "ADMIN";
+	} else if (email === "student") {
+		email = "dev2@workflow.com";
+		if (password === "password123") password = "password123";
+		role = "TEAM_DEVELOPER";
+	} else if (email === "grade_admin") {
+		email = "grade_admin@example.com";
+		if (password === "password123") password = "password123";
+		role = "ADMIN";
+	} else if (email === "admin_retro") {
+		email = "admin_retro@example.com";
+		if (password === "password123") password = "password123";
+		role = "ADMIN";
+	} else if (email === "admin_eval") {
+		email = "admin_eval@example.com";
+		if (password === "password123") password = "password123";
+		role = "ADMIN";
+	} else if (email === "chat_user") {
+		email = "chat_user@example.com";
+		if (password === "password123") password = "password123";
+		role = "ADMIN";
+	} else if (email === "scrum_master") {
+		email = "scrum_master@example.com";
+		if (password === "password123") password = "password123";
+		role = "ADMIN";
+	} else if (!email.includes("@")) {
+		email = `${email}@example.com`;
+	}
+
 	// --- 2. Perform API Auth ---
 	// Register
 	const registerRes = await request.post("/api/auth/register", {

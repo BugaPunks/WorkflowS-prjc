@@ -22,7 +22,7 @@ test.describe("Dashboard Roles Split", () => {
 		request,
 	}) => {
 		// Login as Student
-		await loginViaApi(page, request, "student", "STUDENT");
+		await loginViaApi(page, request, "student", "TEAM_DEVELOPER");
 
 		await page.goto("/projects");
 
