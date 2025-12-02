@@ -13,7 +13,8 @@
 		"preview": "rsbuild preview",
 		"migrate:dev": "prisma migrate dev",
 		"migrate:prod": "prisma migrate deploy",
-		"prisma:studio": "prisma studio"
+		"prisma:studio": "prisma studio",
+		"switch-db": "./scripts/switch-db.sh"
 	},
 	"dependencies": {
 		"@hello-pangea/dnd": "^18.0.1",

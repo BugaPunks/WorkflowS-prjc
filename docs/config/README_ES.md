@@ -58,10 +58,16 @@
 
 ## 🚀 Scripts Automáticos
 
-### **migrate.sh** (macOS/Linux)
+### **scripts/migrate.sh** (macOS/Linux)
 ```bash
-chmod +x migrate.sh
-./migrate.sh
+chmod +x scripts/migrate.sh
+./scripts/migrate.sh
+```
+
+### **scripts/setup.sh** (macOS/Linux)
+```bash
+chmod +x scripts/setup.sh
+./scripts/setup.sh
 ```
 Menú interactivo para migraciones
 
@@ -71,10 +77,10 @@ migrate.bat
 ```
 Menú interactivo para migraciones
 
-### **setup.sh** (macOS/Linux)
+### **scripts/setup.sh** (macOS/Linux)
 ```bash
-chmod +x setup.sh
-./setup.sh
+chmod +x scripts/setup.sh
+./scripts/setup.sh
 ```
 Ejecuta automáticamente todo
 
@@ -114,6 +120,28 @@ npm run preview            # Previsualizar build
 
 ---
 
+## 🔄 Cambiar Base de Datos (Switch DB)
+
+Para alternar fácilmente entre SQLite y PostgreSQL:
+
+```bash
+npm run switch-db
+# O directamente: ./scripts/switch-db.sh
+```
+
+**Qué hace:**
+- Cambia el provider en `prisma/schema.prisma`
+- Actualiza `DATABASE_URL` en `.env`
+- Ejecuta migraciones automáticamente
+- Genera el cliente Prisma
+
+**Notas importantes:**
+- Si tienes datos en la BD actual, **expórtalos primero** (no se migra automáticamente)
+- Asegúrate de que PostgreSQL esté corriendo antes de cambiar a él
+- Reinicia el servidor después del cambio
+
+---
+
 ## 🗺️ Estructura del Proyecto
 
 ```
@@ -136,10 +164,13 @@ npm run preview            # Previsualizar build
 │   └── SETUP_SUMMARY.md
 │
 ├── 🔧 SCRIPTS
-│   ├── setup.sh                 # Automático (macOS/Linux)
-│   ├── setup.bat                # Automático (Windows)
-│   ├── migrate.sh               # Migraciones (macOS/Linux)
-│   └── migrate.bat              # Migraciones (Windows)
+│   ├── scripts/
+│   │   ├── setup.sh             # Automático (macOS/Linux)
+│   │   ├── setup.bat            # Automático (Windows)
+│   │   ├── migrate.sh           # Migraciones (macOS/Linux)
+│   │   ├── migrate.bat          # Migraciones (Windows)
+│   │   ├── switch-db.sh         # Cambiar entre SQLite/PostgreSQL
+│   │   └── CHECKLIST.sh         # Checklist del proyecto
 │
 ├── src/
 │   ├── App.tsx                  # Router principal
@@ -286,4 +317,4 @@ npm run dev:all        # App corriendo
 
 **Preguntas? Consulta los .md según el tema**
 
-**Scripts automáticos? Usa `migrate.sh` o `migrate.bat`**
+**Scripts automáticos? Usa `scripts/migrate.sh` o `scripts/migrate.bat`**

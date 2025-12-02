@@ -104,11 +104,11 @@ npm run dev:all
 ### Opción 3: Con Script Automático
 ```bash
 # macOS/Linux
-chmod +x setup.sh
-./setup.sh
+chmod +x scripts/setup.sh
+./scripts/setup.sh
 
 # Windows
-setup.bat
+scripts/setup.bat
 ```
 
 ---
@@ -179,6 +179,13 @@ Password: Password123
 - Verificación de usuario activo
 - CORS configurado
 - Express.json() para parsing
+
+### Generar Clave Secreta JWT
+Para implementar JWT, genera una clave secreta segura:
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+Agrega el resultado a `.env` como `JWT_SECRET=tu_clave_generada`
 
 ✅ **Base de Datos**
 - Email único (constraint)
