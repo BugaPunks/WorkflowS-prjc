@@ -6,7 +6,7 @@ test.describe("Chat System", () => {
 		page,
 		request,
 	}) => {
-		const { userId } = await loginViaApi(page, request, "chat_user", "ADMIN");
+		const { id: userId } = await loginViaApi(page, request, "chat_user", "ADMIN");
 
 		// Create Project
 		const timestamp = Date.now();
@@ -35,14 +35,15 @@ test.describe("Chat System", () => {
 		// Wait for content load more robustly
 		await page.waitForLoadState('networkidle');
 
+        // Check for error state
+        if (await page.getByText("Error al cargar el proyecto").isVisible()) {
+            throw new Error("Failed to load project in frontend");
+        }
+
 		// Click Chat tab - use generic locator if specific text fails due to layout
 		const chatBtn = page.getByRole("button", { name: "Chat" });
-		if (await chatBtn.isVisible()) {
-			await chatBtn.click();
-		} else {
-			// Fallback
-			await page.click('text=Chat');
-		}
+		await chatBtn.waitFor({ state: "visible" });
+		await chatBtn.click();
 
 		// Send Message
 		const message = `Hello World ${timestamp}`;

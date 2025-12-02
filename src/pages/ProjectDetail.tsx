@@ -62,12 +62,7 @@ interface AvailableUser {
 function ChatSection({ projectId }: { projectId: string }) {
 	const [messages, setMessages] = useState<ChatMessage[]>([]);
 	const [input, setInput] = useState("");
-	const [currentUser, setCurrentUser] = useState<ChatUser | null>(null);
-
-	useEffect(() => {
-		const userStr = localStorage.getItem("user");
-		if (userStr) setCurrentUser(JSON.parse(userStr));
-	}, []);
+	const { session: currentUser } = useSession();
 
 	const loadMessages = useCallback(async () => {
 		try {
@@ -756,7 +751,7 @@ export default function ProjectDetail() {
 			const unassigned = projectStories.filter((s) => !s.sprintId);
 			setBacklogStories(unassigned);
 		} catch (err) {
-			setError("Error al cargar el proyecto");
+			setError(`Error al cargar el proyecto: ${err instanceof Error ? err.message : String(err)}`);
 			console.error(err);
 		} finally {
 			setIsLoading(false);
