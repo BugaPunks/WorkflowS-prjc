@@ -751,7 +751,9 @@ export default function ProjectDetail() {
 			const unassigned = projectStories.filter((s) => !s.sprintId);
 			setBacklogStories(unassigned);
 		} catch (err) {
-			setError(`Error al cargar el proyecto: ${err instanceof Error ? err.message : String(err)}`);
+			setError(
+				`Error al cargar el proyecto: ${err instanceof Error ? err.message : String(err)}`,
+			);
 			console.error(err);
 		} finally {
 			setIsLoading(false);
