@@ -28,7 +28,7 @@ test.describe("Retrospective Board", () => {
 		page,
 		request,
 	}) => {
-		const { userId } = await loginViaApi(
+		const { id: userId } = await loginViaApi(
 			page,
 			request,
 			"scrum_master",
