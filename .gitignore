@@ -18,3 +18,5 @@ dist/
 /src/generated/prisma
 dev.db
 uploads/
+.qodo
+.env

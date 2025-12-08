@@ -6,30 +6,39 @@
 set -e
 
 # URLs de base de datos
-SQLITE_URL="file:./dev.db"
+SQLITE_URL="file:./prisma/dev.db"
 POSTGRES_URL="postgresql://postgres:123456@localhost:5432/workflow_db"
 
 # Archivo de esquema
-SCHEMA_FILE="../prisma/schema.prisma"
-ENV_FILE="../.env"
+SCHEMA_FILE="prisma/schema.prisma"
+ENV_FILE=".env"
 
 # Función para obtener el provider actual
 get_current_provider() {
-    grep -oP 'provider = "\K[^"]+' "$SCHEMA_FILE"
+    grep -A 5 "datasource db" "$SCHEMA_FILE" | grep -oP 'provider = "\K[^"]+'
 }
 
 # Función para cambiar provider
 switch_provider() {
     local current_provider="$1"
     local new_provider="$2"
-    sed -i "s/provider = \"$current_provider\"/provider = \"$new_provider\"/" "$SCHEMA_FILE"
+    sed -i '/datasource db/,/}/ s/provider = "'"$current_provider"'"/provider = "'"$new_provider"'"/' "$SCHEMA_FILE"
+    if [ "$new_provider" = "sqlite" ]; then
+        # Agregar engineType = "binary" si no existe
+        if ! grep -q 'engineType = "binary"' "$SCHEMA_FILE"; then
+            sed -i '/provider = "prisma-client-js"/a\  engineType = "binary"' "$SCHEMA_FILE"
+        fi
+    elif [ "$new_provider" = "postgresql" ]; then
+        # Remover engineType = "binary" si existe
+        sed -i '/engineType = "binary"/d' "$SCHEMA_FILE"
+    fi
 }
 
 # Función para cambiar DATABASE_URL
 switch_db_url() {
     local new_url="$1"
     if grep -q "DATABASE_URL" "$ENV_FILE"; then
-        sed -i "s|DATABASE_URL=.*|DATABASE_URL=\"$new_url\"|" "$ENV_FILE"
+        sed -i "s|DATABASE_URL=\".*\"|DATABASE_URL=\"$new_url\"|" "$ENV_FILE"
     else
         echo "DATABASE_URL=\"$new_url\"" >> "$ENV_FILE"
     fi
@@ -37,8 +46,11 @@ switch_db_url() {
 
 # Función para ejecutar migraciones
 run_migrations() {
-    echo "Ejecutando migraciones..."
-    npm run migrate:dev
+    echo "Eliminando migraciones anteriores..."
+    rm -rf prisma/migrations
+    rm -f prisma/migration_lock.toml
+    echo "Reseteando base de datos..."
+    npx prisma migrate reset --force
     echo "Generando cliente Prisma..."
     npx prisma generate
 }
