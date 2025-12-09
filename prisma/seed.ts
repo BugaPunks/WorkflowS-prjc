@@ -1,7 +1,23 @@
+import "dotenv/config";
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient();
+const connectionString = process.env.DATABASE_URL;
+
+let adapter;
+if (connectionString?.startsWith('postgresql')) {
+  adapter = new PrismaPg(new Pool({ connectionString }));
+} else if (connectionString?.startsWith('file:')) {
+  adapter = new PrismaBetterSqlite3({ url: connectionString });
+}
+
+const prisma = new PrismaClient({
+  log: ['query', 'error', 'warn'],
+  ...(adapter && { adapter }),
+});
 
 async function main() {
   console.log('🌱 Starting COMPREHENSIVE seed (Enhanced for Doc Mgmt)...');
@@ -63,15 +79,15 @@ async function main() {
     include: { criteria: true }
   });
 
-  // --- 3. PROJECT 1: Sistema de Gestión Académica (ACTIVE) ---
-  const project1 = await prisma.project.create({
-    data: {
-      name: 'Sistema de Gestión Académica ' + Date.now(),
-      description: 'Plataforma para gestión de notas y asistencia',
-      status: 'ACTIVE',
-      ownerId: admin.id,
-      startDate: new Date('2023-10-01'),
-      endDate: new Date('2023-12-31'),
+   // --- 3. PROJECT 1: Sistema de Gestión Académica (ACTIVE) ---
+   const project1 = await prisma.project.create({
+     data: {
+       name: 'Sistema de Gestión Académica ' + Date.now(),
+       description: 'Plataforma para gestión de notas y asistencia',
+       status: 'ACTIVE',
+       ownerId: admin.id,
+       startDate: new Date('2025-12-01'),
+       endDate: new Date('2026-02-28'),
       members: {
         create: [
           { userId: dev1.id, role: 'TEAM_DEVELOPER' },
@@ -196,16 +212,16 @@ async function main() {
   });
 
   // 3d. Sprint 1 (Completed) & Retrospectives
-  const sprint1 = await prisma.sprint.create({
-    data: {
-      projectId: project1.id,
-      name: 'Sprint 1: Autenticación',
-      description: 'Implementación del sistema de login y roles',
-      status: 'COMPLETED',
-      startDate: new Date('2023-10-01'),
-      endDate: new Date('2023-10-14'),
-    },
-  });
+   const sprint1 = await prisma.sprint.create({
+     data: {
+       projectId: project1.id,
+       name: 'Sprint 1: Autenticación',
+       description: 'Implementación del sistema de login y roles',
+       status: 'COMPLETED',
+       startDate: new Date('2025-12-01'),
+       endDate: new Date('2025-12-14'),
+     },
+   });
 
   // Retrospectives for Sprint 1
   await prisma.retrospectiveItem.createMany({
@@ -217,32 +233,33 @@ async function main() {
   });
 
   // 3e. Stories & Tasks Sprint 1
-  const story1 = await prisma.userStory.create({
-    data: {
-      projectId: project1.id,
-      sprintId: sprint1.id,
-      title: 'Login de Usuarios',
-      description: 'Como usuario quiero loguearme para acceder al sistema',
-      priority: 'HIGH',
-      storyPoints: 5,
-      status: 'DONE',
-      completedAt: new Date('2023-10-12'),
-      assigneeId: dev1.id,
-    },
-  });
+   const story1 = await prisma.userStory.create({
+     data: {
+       projectId: project1.id,
+       sprintId: sprint1.id,
+       title: 'Login de Usuarios',
+       description: 'Como usuario quiero loguearme para acceder al sistema',
+       priority: 'HIGH',
+       storyPoints: 5,
+       status: 'COMPLETED',
+       completedAt: new Date('2025-12-12'),
+       assigneeId: dev1.id,
+     },
+   });
 
-  const task1 = await prisma.task.create({
-    data: {
-      projectId: project1.id,
-      sprintId: sprint1.id,
-      userStoryId: story1.id,
-      title: 'Diseñar tabla de usuarios',
-      status: 'DONE',
-      priority: 'HIGH',
-      assigneeId: dev1.id,
-      completedAt: new Date('2023-10-05'),
-    },
-  });
+   const task1 = await prisma.task.create({
+     data: {
+       projectId: project1.id,
+       sprintId: sprint1.id,
+       userStoryId: story1.id,
+       title: 'Diseñar tabla de usuarios',
+       status: 'COMPLETED',
+       priority: 'HIGH',
+       assigneeId: dev1.id,
+       completedAt: new Date('2025-12-05'),
+       deadline: new Date('2025-12-10'),
+     },
+   });
 
   // 3f. Evaluations (Task & Sprint)
   if (globalRubric.criteria.length > 0) {
@@ -282,51 +299,52 @@ async function main() {
       });
   }
 
-  // 3g. Sprint 2 (Active)
-  const sprint2 = await prisma.sprint.create({
-    data: {
-      projectId: project1.id,
-      name: 'Sprint 2: Dashboard',
-      description: 'Panel principal para alumnos y docentes',
-      status: 'ACTIVE',
-      startDate: new Date('2023-10-15'),
-      endDate: new Date('2023-10-29'),
-    },
-  });
+   // 3g. Sprint 2 (Active)
+   const sprint2 = await prisma.sprint.create({
+     data: {
+       projectId: project1.id,
+       name: 'Sprint 2: Dashboard',
+       description: 'Panel principal para alumnos y docentes',
+       status: 'ACTIVE',
+       startDate: new Date('2025-12-15'),
+       endDate: new Date('2025-12-29'),
+     },
+   });
 
-  const story2 = await prisma.userStory.create({
-    data: {
-      projectId: project1.id,
-      sprintId: sprint2.id,
-      title: 'Ver calificaciones',
-      description: 'Como alumno quiero ver mis notas',
-      priority: 'MEDIUM',
-      storyPoints: 8,
-      status: 'IN_PROGRESS',
-      assigneeId: dev2.id,
-    },
-  });
+   const story2 = await prisma.userStory.create({
+     data: {
+       projectId: project1.id,
+       sprintId: sprint2.id,
+       title: 'Ver calificaciones',
+       description: 'Como alumno quiero ver mis notas',
+       priority: 'MEDIUM',
+       storyPoints: 8,
+       status: 'IN_PROGRESS',
+       assigneeId: dev2.id,
+     },
+   });
 
-  await prisma.task.create({
-    data: {
-      projectId: project1.id,
-      sprintId: sprint2.id,
-      userStoryId: story2.id,
-      title: 'Frontend Componente Tabla',
-      status: 'IN_PROGRESS',
-      assigneeId: dev2.id,
-    },
-  });
+   await prisma.task.create({
+     data: {
+       projectId: project1.id,
+       sprintId: sprint2.id,
+       userStoryId: story2.id,
+       title: 'Frontend Componente Tabla',
+       status: 'IN_PROGRESS',
+       assigneeId: dev2.id,
+       deadline: new Date('2025-12-25'),
+     },
+   });
 
-  // --- 4. PROJECT 2: E-Commerce App (PLANNING) ---
-  const project2 = await prisma.project.create({
-    data: {
-      name: 'App de Comercio Electrónico ' + Date.now(),
-      description: 'Tienda en línea con carrito de compras',
-      status: 'ACTIVE',
-      ownerId: admin.id,
-      startDate: new Date('2023-11-01'),
-      endDate: new Date('2024-02-01'),
+   // --- 4. PROJECT 2: E-Commerce App (PLANNING) ---
+   const project2 = await prisma.project.create({
+     data: {
+       name: 'App de Comercio Electrónico ' + Date.now(),
+       description: 'Tienda en línea con carrito de compras',
+       status: 'ACTIVE',
+       ownerId: admin.id,
+       startDate: new Date('2026-01-01'),
+       endDate: new Date('2026-04-01'),
       members: {
         create: [
           { userId: dev1.id, role: 'PRODUCT_OWNER' },
