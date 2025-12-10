@@ -89,7 +89,7 @@ export function LoginForm() {
 			});
 
 			// Redirigir directamente al dashboard (Proyectos)
-			navigate("/projects");
+			navigate("/");
 		} catch (error) {
 			setSubmitError(
 				error instanceof Error ? error.message : "Error desconocido",
