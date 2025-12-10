@@ -94,10 +94,10 @@ export function LoginSuccess() {
 				<div className="space-y-3">
 					<button
 						type="button"
-						onClick={() => navigate("/projects")}
+						onClick={() => navigate("/")}
 						className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition"
 					>
-						Ir a Proyectos
+						Ir al Panel de Control
 					</button>
 					<button
 						type="button"

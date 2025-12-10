@@ -1,16 +1,12 @@
 import "./App.css";
-import {
-	Navigate,
-	Route,
-	BrowserRouter as Router,
-	Routes,
-} from "react-router-dom";
+import { Route, BrowserRouter as Router, Routes } from "react-router-dom";
 import { LoginForm } from "@/auth/LoginForm";
 import { LoginSuccess } from "@/auth/LoginSuccess";
 import { RegisterForm } from "@/auth/RegisterForm";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { SessionProvider } from "@/hooks/useSession";
 import Calendar from "@/pages/Calendar";
+import Dashboard from "@/pages/Dashboard";
 import Evaluations from "@/pages/Evaluations";
 import GradingView from "@/pages/GradingView";
 import ProjectDetail from "@/pages/ProjectDetail";
@@ -36,6 +32,7 @@ const App = () => {
 
 					{/* Rutas protegidas con DashboardLayout */}
 					<Route element={<DashboardLayout />}>
+						<Route path="/" element={<Dashboard />} />
 						<Route path="/projects" element={<Projects />} />
 						<Route path="/projects/:id" element={<ProjectDetail />} />
 						<Route path="/sprints" element={<Sprints />} />
@@ -64,9 +61,6 @@ const App = () => {
 						<Route path="/evaluations" element={<Evaluations />} />
 						<Route path="/calendar" element={<Calendar />} />
 					</Route>
-
-					{/* Redirección por defecto */}
-					<Route path="/" element={<Navigate to="/projects" replace />} />
 				</Routes>
 			</SessionProvider>
 		</Router>

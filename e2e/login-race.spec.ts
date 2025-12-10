@@ -17,11 +17,12 @@ test.describe('Login Race Condition', () => {
     await page.fill('input[name="password"]', password);
     await page.click('button[type="submit"]');
 
-    // Expect redirect to /projects without reload
+    // Expect redirect to root (Dashboard) without reload
     // We expect URL to change.
-    await expect(page).toHaveURL(/\/projects/);
+    await expect(page).toHaveURL("http://localhost:3000/");
 
-    // Verify we are authenticated (e.g. sidebar visible)
-    await expect(page.getByRole('link', { name: 'Proyectos' })).toBeVisible();
+    // Verify we are authenticated (e.g. welcome header visible)
+    // The exact text depends on the new Dashboard logic, usually "Bienvenido Race User"
+    await expect(page.getByText('Bienvenido, Race User')).toBeVisible();
   });
 });
