@@ -11,6 +11,7 @@ router.get("/", async (_req, res) => {
 				project: true,
 				tasks: true,
 				userStories: true,
+				evaluations: true,
 			},
 		});
 		res.json({ data: sprints });
@@ -32,6 +33,7 @@ router.get("/:id", async (req, res) => {
 				project: true,
 				tasks: true,
 				userStories: true,
+				evaluations: true,
 			},
 		});
 		if (!sprint) return res.status(404).json({ error: "Sprint no encontrado" });

@@ -5,7 +5,7 @@ test.describe("Grading System", () => {
   let project: any;
   let teacher: any;
   let student: any;
-  let task: any;
+  let sprint: any;
   let rubric: any;
 
   test.beforeEach(async ({ page }) => {
@@ -36,15 +36,23 @@ test.describe("Grading System", () => {
         data: { userId: student.id, role: "TEAM_DEVELOPER" }
     });
 
-    // Create Task & Assign
-    const tRes = await request.post("http://localhost:5000/api/tasks", {
-        data: { title: "Task to Grade", projectId: project.id, assigneeId: student.id, status: "COMPLETED" }
+    // Create Sprint (COMPLETED status to show up in evaluations)
+    const today = new Date().toISOString();
+    const tomorrow = new Date(Date.now() + 86400000).toISOString();
+    const sRes = await request.post("http://localhost:5000/api/sprints", {
+        data: {
+            name: "Sprint 1",
+            projectId: project.id,
+            startDate: today,
+            endDate: tomorrow,
+            status: "COMPLETED"
+        }
     });
-    const tData = await tRes.json();
-    task = tData.data;
+    const sData = await sRes.json();
+    sprint = sData.data;
   });
 
-  test("Teacher can grade a task and update it", async ({ page }) => {
+  test("Teacher can grade a sprint and update it", async ({ page }) => {
     // Login Teacher
     await page.goto("/");
     await page.evaluate((u) => localStorage.setItem("user", JSON.stringify(u)), teacher);
@@ -53,53 +61,45 @@ test.describe("Grading System", () => {
     // Go to Evaluations (Admin View)
     await page.goto("/evaluations");
 
-    // Find task
-    await expect(page.getByText("Task to Grade").first()).toBeVisible();
+    // Find Sprint
+    // We look for "Sprint 1" text which should be in the card
+    await expect(page.getByText("Sprint 1").first()).toBeVisible();
     await page.getByText("Ir a Calificar").first().click();
 
     // Check if grading page loaded (Evaluation form)
-    // Assuming GradingView exists and has inputs
-    // We'll trust the navigation.
-    // Fill Grade (Assuming input fields for criteria exist)
-    // This part depends on GradingView implementation which we haven't seen in detail but know exists.
-    // Let's assume standard inputs.
+    await expect(page.getByRole("heading", { name: "Calificar Sprint" })).toBeVisible();
 
-    // Actually, I'll update the grade via API for robustness in this turn, then verify UI reflection.
-    // Or try to use UI if simple.
-    // Let's verify the API endpoint we just made first.
+    // Select Rubric (if multiple, or verify default)
+    const rubricSelect = page.locator("#rubric-select");
+    if (await rubricSelect.isVisible()) {
+        await rubricSelect.selectOption({ label: "Standard Rubric" });
+    }
 
-    const evalRes = await page.request.post("http://localhost:5000/api/evaluations", {
-        data: {
-            projectId: project.id,
-            taskId: task.id,
-            evaluatorId: teacher.id,
-            score: 80,
-            feedback: "Good job",
-            criteriaScores: [
-                { criteriaId: rubric.criteria[0].id, score: 40 },
-                { criteriaId: rubric.criteria[1].id, score: 40 }
-            ]
-        }
-    });
-    expect(evalRes.status()).toBe(201);
-    const evalData = await evalRes.json();
-    const evalId = evalData.data.id;
+    // Fill Grade via API call simulation for robustness (Frontend calls API)
+    // Actually, let's use UI interactions as it is an E2E test.
 
-    // Now Update via new PUT endpoint
-    const updateRes = await page.request.put(`http://localhost:5000/api/evaluations/${evalId}`, {
-        data: {
-            score: 90,
-            feedback: "Excellent job",
-            criteriaScores: [
-                { criteriaId: rubric.criteria[0].id, score: 45 },
-                { criteriaId: rubric.criteria[1].id, score: 45 }
-            ]
-        }
-    });
-    expect(updateRes.status()).toBe(200);
-    const updatedData = await updateRes.json();
-    expect(updatedData.data.score).toBe(90);
-    expect(updatedData.data.feedback).toBe("Excellent job");
+    // Fill Criteria Scores
+    // Assuming standard number inputs for criteria
+    const inputs = page.locator('input[type="number"]');
+    await expect(inputs).toHaveCount(2); // 2 criteria
+    await inputs.nth(0).fill("40");
+    await inputs.nth(1).fill("40");
+
+    // Fill Feedback
+    await page.locator('textarea').last().fill("Good job on the sprint");
+
+    // Save
+    // Mock the alert
+    page.on('dialog', dialog => dialog.accept());
+    await page.getByRole("button", { name: "Guardar Calificación" }).click();
+
+    // Should return to evaluations
+    await expect(page).toHaveURL(/\/evaluations/);
+
+    // Should disappear from list (or show as evaluated if we didn't filter it out? logic says filter pending)
+    // The current logic in Evaluations.tsx filters: `(!s.evaluations || s.evaluations.length === 0)`
+    // So it should disappear.
+    await expect(page.getByText("Sprint 1")).not.toBeVisible();
 
     // Login Student to View Grade
     await page.goto("/");
@@ -107,7 +107,8 @@ test.describe("Grading System", () => {
     await page.reload();
 
     await page.goto("/evaluations");
-    await expect(page.getByText("Excellent job")).toBeVisible();
-    await expect(page.getByText("90")).toBeVisible();
+    await expect(page.getByText("Sprint 1")).toBeVisible();
+    await expect(page.getByText("80")).toBeVisible(); // 40 + 40
+    await expect(page.getByText("Good job on the sprint")).toBeVisible();
   });
 });

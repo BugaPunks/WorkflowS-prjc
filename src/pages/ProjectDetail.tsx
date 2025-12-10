@@ -11,12 +11,6 @@ import RetrospectiveBoard from "@/components/RetrospectiveBoard";
 import { useSession } from "@/hooks/useSession";
 
 // Types for internal state to avoid 'any'
-interface ChatUser {
-	id: string;
-	name: string;
-	email: string;
-}
-
 interface ChatMessage {
 	id: string;
 	user: { name: string };
