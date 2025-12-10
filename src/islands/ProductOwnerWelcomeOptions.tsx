@@ -257,7 +257,7 @@ export default function ProductOwnerWelcomeOptions() {
 				<h2 className="text-xl font-bold mb-4 text-gray-800">
 					Acciones Rápidas
 				</h2>
-				<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+				<div className="grid grid-cols-2 md:grid-cols-3 gap-4">
 					<a
 						href="/user-stories"
 						className="bg-gray-100 hover:bg-gray-200 p-4 rounded-lg text-center transition-colors"
@@ -283,31 +283,7 @@ export default function ProductOwnerWelcomeOptions() {
 						</span>
 					</a>
 					<a
-						href="/backlog/prioritize"
-						className="bg-gray-100 hover:bg-gray-200 p-4 rounded-lg text-center transition-colors"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							className="h-8 w-8 mx-auto mb-2 text-gray-700"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-							aria-hidden="true"
-						>
-							<title>Icono de priorización</title>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth="2"
-								d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"
-							/>
-						</svg>
-						<span className="text-sm font-medium text-gray-700">
-							Priorizar Backlog
-						</span>
-					</a>
-					<a
-						href="/backlog/plan-sprint"
+						href="/projects"
 						className="bg-gray-100 hover:bg-gray-200 p-4 rounded-lg text-center transition-colors"
 					>
 						<svg
@@ -327,7 +303,7 @@ export default function ProductOwnerWelcomeOptions() {
 							/>
 						</svg>
 						<span className="text-sm font-medium text-gray-700">
-							Planificar Sprint
+							Ir a Proyectos para planificar
 						</span>
 					</a>
 					<a
