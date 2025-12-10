@@ -25,38 +25,6 @@ export default function ScrumMasterWelcomeOptions() {
 		},
 	];
 
-	// Menú de reuniones
-	const meetingsSections: DropdownMenuSection[] = [
-		{
-			items: [
-				{ label: "Daily Scrum", href: "/meetings/daily" },
-				{ label: "Planificación de Sprint", href: "/meetings/planning" },
-				{ label: "Revisión de Sprint", href: "/meetings/review" },
-				{ label: "Retrospectiva", href: "/meetings/retrospective" },
-			],
-		},
-		{
-			items: [{ label: "Programar reunión", href: "/meetings/schedule" }],
-		},
-	];
-
-	// Menú de impedimentos
-	const impedimentsSections: DropdownMenuSection[] = [
-		{
-			items: [
-				{ label: "Registrar impedimento", href: "/impediments/create" },
-				{ label: "Impedimentos activos", href: "/impediments?filter=active" },
-				{
-					label: "Impedimentos resueltos",
-					href: "/impediments?filter=resolved",
-				},
-			],
-		},
-		{
-			items: [{ label: "Asignar responsable", href: "/impediments/assign" }],
-		},
-	];
-
 	// Icono personalizado para sprints
 	const sprintIcon = (
 		<svg
@@ -172,88 +140,6 @@ export default function ScrumMasterWelcomeOptions() {
 							/>
 						</div>
 					</div>
-
-					{/* Tarjeta de Reuniones */}
-					<div className="bg-green-50 p-5 rounded-lg border border-green-200">
-						<div className="flex justify-between items-start mb-4">
-							<div>
-								<h3 className="font-bold text-lg text-green-800">
-									Reuniones Scrum
-								</h3>
-								<p className="text-gray-600 mt-1">
-									Programa y gestiona las reuniones del equipo.
-								</p>
-							</div>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								className="h-8 w-8 text-green-500"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke="currentColor"
-								aria-hidden="true"
-								role="img"
-							>
-								<title>Icono de calendario</title>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth="2"
-									d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-								/>
-							</svg>
-						</div>
-						<div className="flex justify-between items-center">
-							<a href="/meetings" className="text-green-600 hover:underline">
-								Gestionar reuniones →
-							</a>
-							<DropdownMenu
-								buttonText="Opciones"
-								sections={meetingsSections}
-								className="ml-2"
-							/>
-						</div>
-					</div>
-
-					{/* Tarjeta de Impedimentos */}
-					<div className="bg-amber-50 p-5 rounded-lg border border-amber-200">
-						<div className="flex justify-between items-start mb-4">
-							<div>
-								<h3 className="font-bold text-lg text-amber-800">
-									Impedimentos
-								</h3>
-								<p className="text-gray-600 mt-1">
-									Registra y da seguimiento a los impedimentos del equipo.
-								</p>
-							</div>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								className="h-8 w-8 text-amber-500"
-								fill="none"
-								viewBox="0 0 24 24"
-								stroke="currentColor"
-								aria-hidden="true"
-								role="img"
-							>
-								<title>Icono de advertencia</title>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth="2"
-									d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-								/>
-							</svg>
-						</div>
-						<div className="flex justify-between items-center">
-							<a href="/impediments" className="text-amber-600 hover:underline">
-								Ver impedimentos →
-							</a>
-							<DropdownMenu
-								buttonText="Opciones"
-								sections={impedimentsSections}
-								className="ml-2"
-							/>
-						</div>
-					</div>
 				</div>
 			</div>
 
@@ -261,9 +147,9 @@ export default function ScrumMasterWelcomeOptions() {
 				<h2 className="text-xl font-bold mb-4 text-gray-800">
 					Acciones Rápidas
 				</h2>
-				<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+				<div className="grid grid-cols-2 md:grid-cols-3 gap-4">
 					<a
-						href="/sprints/create"
+						href="/sprints"
 						className="bg-gray-100 hover:bg-gray-200 p-4 rounded-lg text-center transition-colors"
 					>
 						<svg
@@ -284,82 +170,7 @@ export default function ScrumMasterWelcomeOptions() {
 							/>
 						</svg>
 						<span className="text-sm font-medium text-gray-700">
-							Nuevo Sprint
-						</span>
-					</a>
-					<a
-						href="/meetings/schedule"
-						className="bg-gray-100 hover:bg-gray-200 p-4 rounded-lg text-center transition-colors"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							className="h-8 w-8 mx-auto mb-2 text-gray-700"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-							aria-hidden="true"
-							role="img"
-						>
-							<title>Icono de programar reunión</title>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth="2"
-								d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-							/>
-						</svg>
-						<span className="text-sm font-medium text-gray-700">
-							Programar Reunión
-						</span>
-					</a>
-					<a
-						href="/impediments/create"
-						className="bg-gray-100 hover:bg-gray-200 p-4 rounded-lg text-center transition-colors"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							className="h-8 w-8 mx-auto mb-2 text-gray-700"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-							aria-hidden="true"
-							role="img"
-						>
-							<title>Icono de impedimento</title>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth="2"
-								d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-							/>
-						</svg>
-						<span className="text-sm font-medium text-gray-700">
-							Registrar Impedimento
-						</span>
-					</a>
-					<a
-						href="/meetings/daily"
-						className="bg-gray-100 hover:bg-gray-200 p-4 rounded-lg text-center transition-colors"
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							className="h-8 w-8 mx-auto mb-2 text-gray-700"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
-							aria-hidden="true"
-							role="img"
-						>
-							<title>Icono de daily scrum</title>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth="2"
-								d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-							/>
-						</svg>
-						<span className="text-sm font-medium text-gray-700">
-							Daily Scrum
+							Gestionar Sprints
 						</span>
 					</a>
 				</div>
