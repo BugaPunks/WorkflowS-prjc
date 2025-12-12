@@ -4,6 +4,12 @@ Especificaciones Funcionales y Requisitos de "WorkflowS"
 
 Desarrollar una plataforma web para la gestión de proyectos académicos bajo la metodología Scrum, que centralice la información y facilite el seguimiento y la evaluación objetiva del progreso del equipo.
 
+1.1 Objetivos Específicos
+- Analizar los procesos actuales para el seguimiento de proyectos en la Universidad La Salle para definir los requisitos funcionales y no funcionales de la plataforma.
+- Diseñar los workflows para las fases de la gestión de proyectos con el fin de planificar, controlar y automatizar procesos importantes.
+- Desarrollar el sistema de gestión de proyectos en base a la metodología Scrum, permitiendo una gestión colaborativa y un seguimiento oportuno en cada fase del proceso.
+- Validar el sistema de gestión para la verificación de su correcto funcionamiento mediante casos de prueba integrales.
+
 2. Roles y Actores del Sistema
 
 El sistema debe gestionar los siguientes perfiles con permisos diferenciados :
