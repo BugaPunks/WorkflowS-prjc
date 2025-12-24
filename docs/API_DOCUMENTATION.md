@@ -7,6 +7,16 @@ Esta documentación detalla los endpoints disponibles en la API RESTful desarrol
 
 ---
 
+## ⚙️ Sistema
+
+### Health Check
+- **Ruta:** `GET /api/health`
+- **Descripción:** Verifica que el servidor esté activo.
+- **Respuestas:**
+  - `200 OK`: JSON con estado y timestamp.
+
+---
+
 ## 🔐 Autenticación (`/api/auth`)
 
 Endpoints para gestión de sesiones y registro de usuarios. Utiliza JWT para autenticación.
