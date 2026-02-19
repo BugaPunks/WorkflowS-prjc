@@ -33,6 +33,16 @@ func SetupRoutes(r *gin.Engine) {
 			projects.GET("/:id", handlers.GetProject)
 			projects.PUT("/:id", handlers.UpdateProject)
 			projects.DELETE("/:id", handlers.DeleteProject)
+
+			// Sprint Routes (Nested under Projects)
+			sprints := projects.Group("/:projectId/sprints")
+			{
+				sprints.POST("/", handlers.CreateSprint)
+				sprints.GET("/", handlers.GetSprints)
+				sprints.GET("/:sprintId", handlers.GetSprint)
+				sprints.PUT("/:sprintId", handlers.UpdateSprint)
+				sprints.DELETE("/:sprintId", handlers.DeleteSprint)
+			}
 		}
 	}
 }

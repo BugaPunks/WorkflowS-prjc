@@ -5,22 +5,22 @@ import (
 )
 
 type Sprint struct {
-	ID          string     `gorm:"primaryKey;type:string"`
-	ProjectID   string     `gorm:"not null"`
-	Name        string     `gorm:"not null"`
-	Description *string
-	StartDate   time.Time  `gorm:"not null"`
-	EndDate     time.Time  `gorm:"not null"`
-	Status      string     `gorm:"default:'PLANNING'"`
-	CreatedAt   time.Time  `gorm:"autoCreateTime"`
-	UpdatedAt   time.Time  `gorm:"autoUpdateTime"`
+	ID          string     `gorm:"primaryKey;type:string" json:"id"`
+	ProjectID   string     `gorm:"not null" json:"projectId"`
+	Name        string     `gorm:"not null" json:"name"`
+	Description *string    `json:"description,omitempty"`
+	StartDate   time.Time  `gorm:"not null" json:"startDate"`
+	EndDate     time.Time  `gorm:"not null" json:"endDate"`
+	Status      string     `gorm:"default:'PLANNING'" json:"status"`
+	CreatedAt   time.Time  `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt   time.Time  `gorm:"autoUpdateTime" json:"updatedAt"`
 
 	// Relationships
-	Project            Project             `gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE"`
-	UserStories        []UserStory         `gorm:"foreignKey:SprintID"`
-	Tasks              []Task              `gorm:"foreignKey:SprintID"`
-	RetrospectiveItems []RetrospectiveItem `gorm:"foreignKey:SprintID"`
-	Evaluations        []Evaluation        `gorm:"foreignKey:SprintID"`
+	Project            Project             `gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE" json:"-"`
+	UserStories        []UserStory         `gorm:"foreignKey:SprintID" json:"userStories,omitempty"`
+	Tasks              []Task              `gorm:"foreignKey:SprintID" json:"tasks,omitempty"`
+	RetrospectiveItems []RetrospectiveItem `gorm:"foreignKey:SprintID" json:"retrospectiveItems,omitempty"`
+	Evaluations        []Evaluation        `gorm:"foreignKey:SprintID" json:"evaluations,omitempty"`
 }
 
 func (Sprint) TableName() string {
@@ -28,15 +28,15 @@ func (Sprint) TableName() string {
 }
 
 type RetrospectiveItem struct {
-	ID        string    `gorm:"primaryKey;type:string"`
-	SprintID  string    `gorm:"not null"`
-	Type      string    `gorm:"not null"` // GOOD, BAD, ACTION
-	Content   string    `gorm:"not null"`
-	UserID    string    `gorm:"not null"`
-	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP"`
+	ID        string    `gorm:"primaryKey;type:string" json:"id"`
+	SprintID  string    `gorm:"not null" json:"sprintId"`
+	Type      string    `gorm:"not null" json:"type"` // GOOD, BAD, ACTION
+	Content   string    `gorm:"not null" json:"content"`
+	UserID    string    `gorm:"not null" json:"userId"`
+	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"createdAt"`
 
-	Sprint Sprint `gorm:"foreignKey:SprintID;constraint:OnDelete:CASCADE"`
-	User   User   `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	Sprint Sprint `gorm:"foreignKey:SprintID;constraint:OnDelete:CASCADE" json:"-"`
+	User   User   `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE" json:"user,omitempty"`
 }
 
 func (RetrospectiveItem) TableName() string {
