@@ -1,4 +1,4 @@
-package handlers_test
+package integration
 
 import (
 	"bytes"
@@ -8,98 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"Wrk_Api/internal/database"
 	"Wrk_Api/internal/handlers"
-	"Wrk_Api/internal/middleware"
 	"Wrk_Api/internal/models"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
-
-func setupUserStoryRouter() *gin.Engine {
-	gin.SetMode(gin.TestMode)
-	r := gin.Default()
-
-	api := r.Group("/api")
-	{
-		auth := api.Group("/auth")
-		{
-			auth.POST("/register", handlers.Register)
-			auth.POST("/login", handlers.Login)
-		}
-
-		projects := api.Group("/projects")
-		projects.Use(middleware.AuthMiddleware())
-		{
-			projects.POST("/", handlers.CreateProject)
-
-			sprints := projects.Group("/:projectId/sprints")
-			{
-				sprints.POST("/", handlers.CreateSprint)
-			}
-
-			stories := projects.Group("/:projectId/stories")
-			{
-				stories.POST("/", handlers.CreateUserStory)
-				stories.GET("/", handlers.GetUserStories)
-				stories.GET("/:storyId", handlers.GetUserStory)
-				stories.PUT("/:storyId", handlers.UpdateUserStory)
-				stories.DELETE("/:storyId", handlers.DeleteUserStory)
-			}
-		}
-	}
-	return r
-}
-
-func setupUserStoryTestDB() {
-	var err error
-	database.DB, err = gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect database")
-	}
-
-	database.DB.AutoMigrate(
-		&models.User{},
-		&models.Project{},
-		&models.ProjectMember{},
-		&models.Sprint{},
-		&models.UserStory{},
-	)
-}
-
-// Helper duplication for isolation
-func getAuthTokenForStory(r *gin.Engine, email, name string) (string, string) {
-	registerReq := handlers.RegisterRequest{
-		Email:    email,
-		Name:     name,
-		Password: "password123",
-	}
-	jsonValue, _ := json.Marshal(registerReq)
-	req, _ := http.NewRequest("POST", "/api/auth/register", bytes.NewBuffer(jsonValue))
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-
-	var response handlers.AuthResponse
-	json.Unmarshal(w.Body.Bytes(), &response)
-	return response.Token, response.User.ID
-}
-
-func createProjectForStoryTest(r *gin.Engine, token string) string {
-	projectReq := handlers.CreateProjectRequest{
-		Name: "Story Project",
-	}
-	jsonValue, _ := json.Marshal(projectReq)
-	req, _ := http.NewRequest("POST", "/api/projects/", bytes.NewBuffer(jsonValue))
-	req.Header.Set("Authorization", "Bearer "+token)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-
-	var project models.Project
-	json.Unmarshal(w.Body.Bytes(), &project)
-	return project.ID
-}
 
 func createSprintForStoryTest(r *gin.Engine, token string, projectId string) string {
 	sprintReq := handlers.CreateSprintRequest{
@@ -119,11 +32,11 @@ func createSprintForStoryTest(r *gin.Engine, token string, projectId string) str
 }
 
 func TestCreateUserStory(t *testing.T) {
-	setupUserStoryTestDB()
-	r := setupUserStoryRouter()
+	SetupTestDB()
+	r := SetupRouter()
 
-	token, userId := getAuthTokenForStory(r, "story_owner@example.com", "Story Owner")
-	projectId := createProjectForStoryTest(r, token)
+	token, userId := GetAuthToken(r, "story_owner@example.com", "Story Owner")
+	projectId := createProjectForSprintTest(r, token) // Reusing helper
 	sprintId := createSprintForStoryTest(r, token, projectId)
 
 	storyReq := handlers.CreateUserStoryRequest{
@@ -152,11 +65,11 @@ func TestCreateUserStory(t *testing.T) {
 }
 
 func TestUpdateUserStoryStatus(t *testing.T) {
-	setupUserStoryTestDB()
-	r := setupUserStoryRouter()
+	SetupTestDB()
+	r := SetupRouter()
 
-	token, _ := getAuthTokenForStory(r, "status_updater@example.com", "Updater")
-	projectId := createProjectForStoryTest(r, token)
+	token, _ := GetAuthToken(r, "status_updater@example.com", "Updater")
+	projectId := createProjectForSprintTest(r, token)
 
 	// Create Story
 	storyReq := handlers.CreateUserStoryRequest{
@@ -193,11 +106,11 @@ func TestUpdateUserStoryStatus(t *testing.T) {
 }
 
 func TestUserStoryValidation(t *testing.T) {
-	setupUserStoryTestDB()
-	r := setupUserStoryRouter()
+	SetupTestDB()
+	r := SetupRouter()
 
-	token, _ := getAuthTokenForStory(r, "validator@example.com", "Validator")
-	projectId := createProjectForStoryTest(r, token)
+	token, _ := GetAuthToken(r, "validator@example.com", "Validator")
+	projectId := createProjectForSprintTest(r, token)
 
 	badSprintId := "non-existent-sprint"
 	storyReq := handlers.CreateUserStoryRequest{

@@ -53,6 +53,16 @@ func SetupRoutes(r *gin.Engine) {
 				stories.PUT("/:storyId", handlers.UpdateUserStory)
 				stories.DELETE("/:storyId", handlers.DeleteUserStory)
 			}
+
+			// Task Routes (Nested under Projects)
+			tasks := projects.Group("/:projectId/tasks")
+			{
+				tasks.POST("/", handlers.CreateTask)
+				tasks.GET("/", handlers.GetTasks)
+				tasks.GET("/:taskId", handlers.GetTask)
+				tasks.PUT("/:taskId", handlers.UpdateTask)
+				tasks.DELETE("/:taskId", handlers.DeleteTask)
+			}
 		}
 	}
 }

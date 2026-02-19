@@ -1,4 +1,4 @@
-package handlers_test
+package integration
 
 import (
 	"bytes"
@@ -7,73 +7,16 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"Wrk_Api/internal/database"
 	"Wrk_Api/internal/handlers"
-	"Wrk_Api/internal/middleware"
 	"Wrk_Api/internal/models"
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
-	"gorm.io/driver/sqlite"
-	"gorm.io/gorm"
 )
 
-// Helper function to setup router with project routes
-func setupProjectRouter() *gin.Engine {
-	gin.SetMode(gin.TestMode)
-	r := gin.Default()
-
-	api := r.Group("/api")
-	{
-		auth := api.Group("/auth")
-		{
-			auth.POST("/register", handlers.Register)
-			auth.POST("/login", handlers.Login)
-		}
-
-		projects := api.Group("/projects")
-		projects.Use(middleware.AuthMiddleware())
-		{
-			projects.POST("/", handlers.CreateProject)
-			projects.GET("/", handlers.GetProjects)
-			projects.GET("/:id", handlers.GetProject)
-			projects.PUT("/:id", handlers.UpdateProject)
-			projects.DELETE("/:id", handlers.DeleteProject)
-		}
-	}
-	return r
-}
-
-func setupProjectTestDB() {
-	var err error
-	database.DB, err = gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect database")
-	}
-
-	database.DB.AutoMigrate(&models.User{}, &models.Project{}, &models.ProjectMember{})
-}
-
-func getAuthToken(r *gin.Engine, email, name string) string {
-	registerReq := handlers.RegisterRequest{
-		Email:    email,
-		Name:     name,
-		Password: "password123",
-	}
-	jsonValue, _ := json.Marshal(registerReq)
-	req, _ := http.NewRequest("POST", "/api/auth/register", bytes.NewBuffer(jsonValue))
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-
-	var response handlers.AuthResponse
-	json.Unmarshal(w.Body.Bytes(), &response)
-	return response.Token
-}
-
 func TestCreateProject(t *testing.T) {
-	setupProjectTestDB()
-	r := setupProjectRouter()
+	SetupTestDB()
+	r := SetupRouter()
 
-	token := getAuthToken(r, "owner@example.com", "Owner")
+	token, _ := GetAuthToken(r, "owner@example.com", "Owner")
 
 	projectReq := handlers.CreateProjectRequest{
 		Name: "New Project",
@@ -96,10 +39,10 @@ func TestCreateProject(t *testing.T) {
 }
 
 func TestGetProjects(t *testing.T) {
-	setupProjectTestDB()
-	r := setupProjectRouter()
+	SetupTestDB()
+	r := SetupRouter()
 
-	token := getAuthToken(r, "user@example.com", "User")
+	token, _ := GetAuthToken(r, "user@example.com", "User")
 
 	// Create a project first
 	projectReq := handlers.CreateProjectRequest{
@@ -128,20 +71,11 @@ func TestGetProjects(t *testing.T) {
 }
 
 func TestProjectAccessControl(t *testing.T) {
-	setupProjectTestDB()
-	r := setupProjectRouter()
+	SetupTestDB()
+	r := SetupRouter()
 
-	// Ensure unique emails for this test since DB might be shared in some setups
-	// or if previous tests didn't clean up fully (though setupProjectTestDB recreates it).
-	// However, the issue is likely due to the helper function 'getAuthToken' trying to register
-	// 'owner@example.com' which might have been registered in TestCreateProject if the DB
-	// instance persists or isn't cleared.
-	// But setupProjectTestDB calls sqlite memory.
-	// The log shows 409 Conflict for "owner@example.com" register.
-	// So we should handle "login if exists" or use unique emails.
-
-	ownerToken := getAuthToken(r, "owner_unique@example.com", "Owner")
-	otherToken := getAuthToken(r, "other_unique@example.com", "Other")
+	ownerToken, _ := GetAuthToken(r, "owner_unique@example.com", "Owner")
+	otherToken, _ := GetAuthToken(r, "other_unique@example.com", "Other")
 
 	// Owner creates project
 	projectReq := handlers.CreateProjectRequest{Name: "Private Project"}
