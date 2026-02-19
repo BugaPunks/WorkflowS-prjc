@@ -63,6 +63,22 @@ func SetupRouter() *gin.Engine {
 				tasks.PUT("/:taskId", handlers.UpdateTask)
 				tasks.DELETE("/:taskId", handlers.DeleteTask)
 			}
+
+			// Rubric Routes
+			rubrics := projects.Group("/:projectId/rubrics")
+			{
+				rubrics.POST("/", handlers.CreateRubric)
+				rubrics.GET("/", handlers.GetRubrics)
+				rubrics.GET("/:rubricId", handlers.GetRubric)
+				rubrics.DELETE("/:rubricId", handlers.DeleteRubric)
+			}
+
+			// Evaluation Routes
+			evaluations := projects.Group("/:projectId/evaluations")
+			{
+				evaluations.POST("/", handlers.CreateEvaluation)
+				evaluations.GET("/", handlers.GetEvaluations)
+			}
 		}
 	}
 	return r
@@ -82,6 +98,10 @@ func SetupTestDB() {
 		&models.Sprint{},
 		&models.UserStory{},
 		&models.Task{},
+		&models.Rubric{},
+		&models.Criteria{},
+		&models.Evaluation{},
+		&models.EvaluationCriteria{},
 	)
 }
 

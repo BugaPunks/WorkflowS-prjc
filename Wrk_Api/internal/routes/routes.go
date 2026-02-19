@@ -63,6 +63,22 @@ func SetupRoutes(r *gin.Engine) {
 				tasks.PUT("/:taskId", handlers.UpdateTask)
 				tasks.DELETE("/:taskId", handlers.DeleteTask)
 			}
+
+			// Rubric Routes
+			rubrics := projects.Group("/:projectId/rubrics")
+			{
+				rubrics.POST("/", handlers.CreateRubric)
+				rubrics.GET("/", handlers.GetRubrics)
+				rubrics.GET("/:rubricId", handlers.GetRubric)
+				rubrics.DELETE("/:rubricId", handlers.DeleteRubric)
+			}
+
+			// Evaluation Routes
+			evaluations := projects.Group("/:projectId/evaluations")
+			{
+				evaluations.POST("/", handlers.CreateEvaluation)
+				evaluations.GET("/", handlers.GetEvaluations)
+			}
 		}
 	}
 }
