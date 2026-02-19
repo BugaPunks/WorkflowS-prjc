@@ -5,6 +5,7 @@ import (
 
 	"Wrk_Api/internal/database"
 	"Wrk_Api/internal/models"
+	"Wrk_Api/internal/utils"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -18,6 +19,16 @@ func CreateUser(c *gin.Context) {
 
 	if user.ID == "" {
 		user.ID = uuid.NewString()
+	}
+
+	// Hash password if provided
+	if user.Password != "" {
+		hashed, err := utils.HashPassword(user.Password)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+			return
+		}
+		user.Password = hashed
 	}
 
 	if result := database.DB.Create(&user); result.Error != nil {

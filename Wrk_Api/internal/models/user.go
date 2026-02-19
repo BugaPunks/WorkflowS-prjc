@@ -5,26 +5,26 @@ import (
 )
 
 type User struct {
-	ID        string    `gorm:"primaryKey;type:string"` // CUIDs are strings
-	Email     string    `gorm:"uniqueIndex;not null"`
-	Name      string    `gorm:"not null"`
-	Password  string    `gorm:"not null"`
-	Role      string    `gorm:"default:'TEAM_DEVELOPER'"`
-	Avatar    *string
-	Active    bool      `gorm:"default:true"`
-	CreatedAt time.Time `gorm:"autoCreateTime"`
-	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	ID        string    `gorm:"primaryKey;type:string" json:"id"`
+	Email     string    `gorm:"uniqueIndex;not null" json:"email"`
+	Name      string    `gorm:"not null" json:"name"`
+	Password  string    `gorm:"not null" json:"-"` // Don't return password in JSON
+	Role      string    `gorm:"default:'TEAM_DEVELOPER'" json:"role"`
+	Avatar    *string   `json:"avatar,omitempty"`
+	Active    bool      `gorm:"default:true" json:"active"`
+	CreatedAt time.Time `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime" json:"updatedAt"`
 
-	// Relationships
-	Projects           []Project           `gorm:"foreignKey:OwnerID"`
-	Tasks              []Task              `gorm:"foreignKey:AssigneeID"`
-	Evaluations        []Evaluation        `gorm:"foreignKey:EvaluatorID"`
-	UserStories        []UserStory         `gorm:"foreignKey:AssigneeID"`
-	Messages           []Message           `gorm:"foreignKey:UserID"`
-	ChatParticipants   []ChatParticipant   `gorm:"foreignKey:UserID"`
-	ProjectMemberships []ProjectMember     `gorm:"foreignKey:UserID"`
-	Notifications      []Notification      `gorm:"foreignKey:UserID"`
-	RetrospectiveItems []RetrospectiveItem `gorm:"foreignKey:UserID"`
+	// Relationships - usually omitted in list views or circular references
+	Projects           []Project           `gorm:"foreignKey:OwnerID" json:"projects,omitempty"`
+	Tasks              []Task              `gorm:"foreignKey:AssigneeID" json:"tasks,omitempty"`
+	Evaluations        []Evaluation        `gorm:"foreignKey:EvaluatorID" json:"evaluations,omitempty"`
+	UserStories        []UserStory         `gorm:"foreignKey:AssigneeID" json:"userStories,omitempty"`
+	Messages           []Message           `gorm:"foreignKey:UserID" json:"-"`
+	ChatParticipants   []ChatParticipant   `gorm:"foreignKey:UserID" json:"-"`
+	ProjectMemberships []ProjectMember     `gorm:"foreignKey:UserID" json:"-"`
+	Notifications      []Notification      `gorm:"foreignKey:UserID" json:"-"`
+	RetrospectiveItems []RetrospectiveItem `gorm:"foreignKey:UserID" json:"-"`
 }
 
 func (User) TableName() string {
