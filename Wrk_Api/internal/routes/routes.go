@@ -23,5 +23,16 @@ func SetupRoutes(r *gin.Engine) {
 			users.POST("/", handlers.CreateUser)
 			users.GET("/", handlers.GetUsers)
 		}
+
+		// Project Routes (Protected)
+		projects := api.Group("/projects")
+		projects.Use(middleware.AuthMiddleware())
+		{
+			projects.POST("/", handlers.CreateProject)
+			projects.GET("/", handlers.GetProjects)
+			projects.GET("/:id", handlers.GetProject)
+			projects.PUT("/:id", handlers.UpdateProject)
+			projects.DELETE("/:id", handlers.DeleteProject)
+		}
 	}
 }
