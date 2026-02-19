@@ -5,25 +5,25 @@ import (
 )
 
 type UserStory struct {
-	ID          string     `gorm:"primaryKey;type:string"`
-	ProjectID   string     `gorm:"not null"`
-	Title       string     `gorm:"not null"`
-	Description string     `gorm:"not null"`
-	Acceptance  *string
-	Priority    string     `gorm:"default:'MEDIUM'"`
-	StoryPoints *int
-	Status      string     `gorm:"default:'BACKLOG'"`
-	CompletedAt *time.Time
-	CreatedAt   time.Time  `gorm:"autoCreateTime"`
-	UpdatedAt   time.Time  `gorm:"autoUpdateTime"`
+	ID          string     `gorm:"primaryKey;type:string" json:"id"`
+	ProjectID   string     `gorm:"not null" json:"projectId"`
+	Title       string     `gorm:"not null" json:"title"`
+	Description string     `gorm:"not null" json:"description"`
+	Acceptance  *string    `json:"acceptance,omitempty"`
+	Priority    string     `gorm:"default:'MEDIUM'" json:"priority"` // MEDIUM, HIGH, LOW
+	StoryPoints *int       `json:"storyPoints,omitempty"`
+	Status      string     `gorm:"default:'BACKLOG'" json:"status"` // BACKLOG, TODO, IN_PROGRESS, DONE
+	CompletedAt *time.Time `json:"completedAt,omitempty"`
+	CreatedAt   time.Time  `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt   time.Time  `gorm:"autoUpdateTime" json:"updatedAt"`
 
 	// Relationships
 	AssigneeID  *string
-	Assignee    *User      `gorm:"foreignKey:AssigneeID"`
+	Assignee    *User      `gorm:"foreignKey:AssigneeID" json:"assignee,omitempty"`
 	SprintID    *string
-	Sprint      *Sprint    `gorm:"foreignKey:SprintID"`
-	Project     Project    `gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE"`
-	Tasks       []Task     `gorm:"foreignKey:UserStoryID"`
+	Sprint      *Sprint    `gorm:"foreignKey:SprintID" json:"sprint,omitempty"`
+	Project     Project    `gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE" json:"-"`
+	Tasks       []Task     `gorm:"foreignKey:UserStoryID" json:"tasks,omitempty"`
 }
 
 func (UserStory) TableName() string {
@@ -31,26 +31,26 @@ func (UserStory) TableName() string {
 }
 
 type Task struct {
-	ID          string     `gorm:"primaryKey;type:string"`
-	ProjectID   string     `gorm:"not null"`
-	UserStoryID *string
-	SprintID    *string
-	Title       string     `gorm:"not null"`
-	Description *string
-	Priority    string     `gorm:"default:'MEDIUM'"`
-	Status      string     `gorm:"default:'TODO'"`
-	Deadline    *time.Time
-	CompletedAt *time.Time
-	CreatedAt   time.Time  `gorm:"autoCreateTime"`
-	UpdatedAt   time.Time  `gorm:"autoUpdateTime"`
+	ID          string     `gorm:"primaryKey;type:string" json:"id"`
+	ProjectID   string     `gorm:"not null" json:"projectId"`
+	UserStoryID *string    `json:"userStoryId,omitempty"`
+	SprintID    *string    `json:"sprintId,omitempty"`
+	Title       string     `gorm:"not null" json:"title"`
+	Description *string    `json:"description,omitempty"`
+	Priority    string     `gorm:"default:'MEDIUM'" json:"priority"`
+	Status      string     `gorm:"default:'TODO'" json:"status"`
+	Deadline    *time.Time `json:"deadline,omitempty"`
+	CompletedAt *time.Time `json:"completedAt,omitempty"`
+	CreatedAt   time.Time  `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt   time.Time  `gorm:"autoUpdateTime" json:"updatedAt"`
 
 	// Relationships
 	AssigneeID  *string
-	Assignee    *User      `gorm:"foreignKey:AssigneeID"`
-	Project     Project    `gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE"`
-	UserStory   *UserStory `gorm:"foreignKey:UserStoryID"`
-	Sprint      *Sprint    `gorm:"foreignKey:SprintID"`
-	Evaluations []Evaluation `gorm:"foreignKey:TaskID"`
+	Assignee    *User      `gorm:"foreignKey:AssigneeID" json:"assignee,omitempty"`
+	Project     Project    `gorm:"foreignKey:ProjectID;constraint:OnDelete:CASCADE" json:"-"`
+	UserStory   *UserStory `gorm:"foreignKey:UserStoryID" json:"userStory,omitempty"`
+	Sprint      *Sprint    `gorm:"foreignKey:SprintID" json:"sprint,omitempty"`
+	Evaluations []Evaluation `gorm:"foreignKey:TaskID" json:"evaluations,omitempty"`
 }
 
 func (Task) TableName() string {
