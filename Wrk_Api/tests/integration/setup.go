@@ -10,12 +10,16 @@ import (
 	"Wrk_Api/internal/handlers"
 	"Wrk_Api/internal/middleware"
 	"Wrk_Api/internal/models"
+	"Wrk_Api/internal/realtime"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
 func SetupRouter() *gin.Engine {
+	// Start GlobalHub for tests to avoid deadlocks on broadcast
+	go realtime.GlobalHub.Run()
+
 	gin.SetMode(gin.TestMode)
 	r := gin.Default()
 
