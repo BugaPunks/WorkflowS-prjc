@@ -117,6 +117,7 @@ func SetupTestDB() {
 		&models.Chat{},
 		&models.ChatParticipant{},
 		&models.Message{},
+		&models.Document{},
 	)
 }
 
