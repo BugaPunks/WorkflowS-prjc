@@ -113,6 +113,44 @@ func SetupRouter() *gin.Engine {
 				docs.DELETE("/:docId", handlers.DeleteDocument)
 				docs.GET("/:docId/download", handlers.DownloadDocument)
 			}
+
+			// Metrics Route
+			projects.GET("/:projectId/metrics", handlers.GetProjectMetrics)
+
+			// Member Routes
+			members := projects.Group("/:projectId/members")
+			{
+				members.POST("/", handlers.AddMember)
+				members.GET("/", handlers.GetMembers)
+				members.DELETE("/:memberId", handlers.RemoveMember)
+			}
+
+			// Retrospective Routes (Nested under Sprints)
+			// Need to match route structure: /projects/:projectId/sprints/:sprintId/retrospectives
+			// Currently defined inside 'sprints' group but let's verify if that group is using :projectId
+			// Yes: sprints := projects.Group("/:projectId/sprints")
+			// So retros are: /projects/:projectId/sprints/:sprintId/retrospectives. Correct.
+			// But wait, the 'sprints' group above didn't include Retrospectives inside its block in this file.
+			// I need to fix that or add it separately.
+			// Adding it separately is tricky because of the nested group context.
+			// Let's rely on the block above? No, the block above for sprints only has CRUD for sprints.
+			// I need to patch the sprints block to include retrospectives or add a new group.
+			// Adding a new group:
+			sprintRetros := projects.Group("/:projectId/sprints/:sprintId/retrospectives")
+			{
+				sprintRetros.POST("/", handlers.CreateRetrospectiveItem)
+				sprintRetros.GET("/", handlers.GetRetrospectiveItems)
+				sprintRetros.PUT("/:itemId", handlers.UpdateRetrospectiveItem)
+				sprintRetros.DELETE("/:itemId", handlers.DeleteRetrospectiveItem)
+			}
+		}
+
+		// Notification Routes (Protected)
+		notifications := api.Group("/notifications")
+		notifications.Use(middleware.AuthMiddleware())
+		{
+			notifications.GET("/", handlers.GetNotifications)
+			notifications.PUT("/:id/read", handlers.MarkNotificationRead)
 		}
 
 		// Chat Routes (Protected)
