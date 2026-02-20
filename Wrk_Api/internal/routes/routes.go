@@ -24,6 +24,14 @@ func SetupRoutes(r *gin.Engine) {
 			users.GET("/", handlers.GetUsers)
 		}
 
+		// Notification Routes (Protected)
+		notifications := api.Group("/notifications")
+		notifications.Use(middleware.AuthMiddleware())
+		{
+			notifications.GET("/", handlers.GetNotifications)
+			notifications.PUT("/:id/read", handlers.MarkNotificationRead)
+		}
+
 		// Project Routes (Protected)
 		projects := api.Group("/projects")
 		projects.Use(middleware.AuthMiddleware())
@@ -42,6 +50,15 @@ func SetupRoutes(r *gin.Engine) {
 				sprints.GET("/:sprintId", handlers.GetSprint)
 				sprints.PUT("/:sprintId", handlers.UpdateSprint)
 				sprints.DELETE("/:sprintId", handlers.DeleteSprint)
+
+				// Retrospective Routes (Nested under Sprints)
+				retros := sprints.Group("/:sprintId/retrospectives")
+				{
+					retros.POST("/", handlers.CreateRetrospectiveItem)
+					retros.GET("/", handlers.GetRetrospectiveItems)
+					retros.PUT("/:itemId", handlers.UpdateRetrospectiveItem)
+					retros.DELETE("/:itemId", handlers.DeleteRetrospectiveItem)
+				}
 			}
 
 			// User Story Routes (Nested under Projects)

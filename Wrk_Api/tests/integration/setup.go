@@ -102,6 +102,8 @@ func SetupTestDB() {
 		&models.Criteria{},
 		&models.Evaluation{},
 		&models.EvaluationCriteria{},
+		&models.RetrospectiveItem{},
+		&models.Notification{},
 	)
 }
 
