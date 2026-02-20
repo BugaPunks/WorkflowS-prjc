@@ -118,6 +118,14 @@ func SetupRoutes(r *gin.Engine) {
 
 			// Metrics Route
 			projects.GET("/:projectId/metrics", handlers.GetProjectMetrics)
+
+			// Member Routes
+			members := projects.Group("/:projectId/members")
+			{
+				members.POST("/", handlers.AddMember)
+				members.GET("/", handlers.GetMembers)
+				members.DELETE("/:memberId", handlers.RemoveMember)
+			}
 		}
 	}
 }
