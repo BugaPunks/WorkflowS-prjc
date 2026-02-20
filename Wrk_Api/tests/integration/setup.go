@@ -79,6 +79,15 @@ func SetupRouter() *gin.Engine {
 				evaluations.POST("/", handlers.CreateEvaluation)
 				evaluations.GET("/", handlers.GetEvaluations)
 			}
+
+			// Document Routes
+			docs := projects.Group("/:projectId/documents")
+			{
+				docs.POST("/", handlers.UploadDocument)
+				docs.GET("/", handlers.GetDocuments)
+				docs.DELETE("/:docId", handlers.DeleteDocument)
+				docs.GET("/:docId/download", handlers.DownloadDocument)
+			}
 		}
 
 		// Chat Routes (Protected)

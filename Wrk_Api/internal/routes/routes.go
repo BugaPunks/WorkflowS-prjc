@@ -127,5 +127,8 @@ func SetupRoutes(r *gin.Engine) {
 				members.DELETE("/:memberId", handlers.RemoveMember)
 			}
 		}
+
+		// WebSocket Route
+		api.GET("/ws", middleware.AuthMiddleware(), handlers.ServeWs)
 	}
 }

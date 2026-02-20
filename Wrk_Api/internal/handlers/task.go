@@ -6,6 +6,7 @@ import (
 
 	"Wrk_Api/internal/database"
 	"Wrk_Api/internal/models"
+	"Wrk_Api/internal/realtime"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -99,6 +100,9 @@ func CreateTask(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create task"})
 		return
 	}
+
+	// Broadcast Event
+	realtime.GlobalHub.BroadcastEvent(projectId, "TASK_CREATED", task)
 
 	c.JSON(http.StatusCreated, task)
 }
@@ -257,6 +261,10 @@ func UpdateTask(c *gin.Context) {
 	}
 
 	database.DB.Preload("Assignee").Preload("Sprint").Preload("UserStory").First(&task, "id = ?", taskId)
+
+	// Broadcast Event
+	realtime.GlobalHub.BroadcastEvent(projectId, "TASK_UPDATED", task)
+
 	c.JSON(http.StatusOK, task)
 }
 
@@ -279,6 +287,9 @@ func DeleteTask(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete task"})
 		return
 	}
+
+	// Broadcast Event
+	realtime.GlobalHub.BroadcastEvent(projectId, "TASK_DELETED", gin.H{"id": taskId})
 
 	c.JSON(http.StatusOK, gin.H{"message": "Task deleted"})
 }

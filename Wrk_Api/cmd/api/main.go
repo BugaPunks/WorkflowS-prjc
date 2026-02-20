@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"Wrk_Api/internal/database"
+	"Wrk_Api/internal/realtime"
 	"Wrk_Api/internal/routes"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -17,6 +18,9 @@ func main() {
 	}
 
 	database.InitDB()
+
+	// Start WebSocket Hub
+	go realtime.GlobalHub.Run()
 
 	r := gin.Default()
 
