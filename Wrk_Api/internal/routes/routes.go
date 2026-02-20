@@ -115,6 +115,9 @@ func SetupRoutes(r *gin.Engine) {
 				docs.DELETE("/:docId", handlers.DeleteDocument)
 				docs.GET("/:docId/download", handlers.DownloadDocument)
 			}
+
+			// Metrics Route
+			projects.GET("/:projectId/metrics", handlers.GetProjectMetrics)
 		}
 	}
 }
