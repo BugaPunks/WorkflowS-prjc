@@ -20,6 +20,8 @@ func SetupRoutes(r *gin.Engine) {
 		users := api.Group("/users")
 		users.Use(middleware.AuthMiddleware())
 		{
+			users.GET("/me", handlers.GetMe)
+			users.PUT("/me", handlers.UpdateMe)
 			users.POST("/", handlers.CreateUser)
 			users.GET("/", handlers.GetUsers)
 		}

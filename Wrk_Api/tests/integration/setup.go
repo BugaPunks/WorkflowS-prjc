@@ -27,6 +27,16 @@ func SetupRouter() *gin.Engine {
 			auth.POST("/login", handlers.Login)
 		}
 
+		// User Routes (Protected)
+		users := api.Group("/users")
+		users.Use(middleware.AuthMiddleware())
+		{
+			users.GET("/me", handlers.GetMe)
+			users.PUT("/me", handlers.UpdateMe)
+			users.POST("/", handlers.CreateUser)
+			users.GET("/", handlers.GetUsers)
+		}
+
 		projects := api.Group("/projects")
 		projects.Use(middleware.AuthMiddleware())
 		{

@@ -5,6 +5,7 @@ import (
 
 	"Wrk_Api/internal/database"
 	"Wrk_Api/internal/models"
+	"Wrk_Api/internal/realtime"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -147,7 +148,8 @@ func SendMessage(c *gin.Context) {
 		return
 	}
 
-	// Trigger notification for others? (Future enhancement)
+	// Broadcast Event
+	realtime.GlobalHub.BroadcastEvent(chatId, "MESSAGE_SENT", message)
 
 	c.JSON(http.StatusCreated, message)
 }
