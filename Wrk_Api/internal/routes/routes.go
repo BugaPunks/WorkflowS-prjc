@@ -32,6 +32,16 @@ func SetupRoutes(r *gin.Engine) {
 			notifications.PUT("/:id/read", handlers.MarkNotificationRead)
 		}
 
+		// Chat Routes (Protected)
+		chats := api.Group("/chats")
+		chats.Use(middleware.AuthMiddleware())
+		{
+			chats.POST("/", handlers.CreateChat)
+			chats.GET("/", handlers.GetUserChats)
+			chats.POST("/:chatId/messages", handlers.SendMessage)
+			chats.GET("/:chatId/messages", handlers.GetMessages)
+		}
+
 		// Project Routes (Protected)
 		projects := api.Group("/projects")
 		projects.Use(middleware.AuthMiddleware())

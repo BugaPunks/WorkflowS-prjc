@@ -80,6 +80,16 @@ func SetupRouter() *gin.Engine {
 				evaluations.GET("/", handlers.GetEvaluations)
 			}
 		}
+
+		// Chat Routes (Protected)
+		chats := api.Group("/chats")
+		chats.Use(middleware.AuthMiddleware())
+		{
+			chats.POST("/", handlers.CreateChat)
+			chats.GET("/", handlers.GetUserChats)
+			chats.POST("/:chatId/messages", handlers.SendMessage)
+			chats.GET("/:chatId/messages", handlers.GetMessages)
+		}
 	}
 	return r
 }
@@ -104,6 +114,9 @@ func SetupTestDB() {
 		&models.EvaluationCriteria{},
 		&models.RetrospectiveItem{},
 		&models.Notification{},
+		&models.Chat{},
+		&models.ChatParticipant{},
+		&models.Message{},
 	)
 }
 
