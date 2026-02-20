@@ -42,7 +42,18 @@ func SetupRouter() *gin.Engine {
 		{
 			projects.POST("/", handlers.CreateProject)
 			projects.GET("/", handlers.GetProjects)
-			projects.GET("/:projectId", handlers.GetProject) // Renamed from :id to avoid conflict/confusion, though handlers.GetProject expects :id
+
+			// We cannot mix :id and :projectId at the same level in Gin.
+			// Handlers use c.Param("id") for Project actions and c.Param("projectId") for nested actions.
+			// This is a design flaw in the handler implementation we inherited/wrote.
+			// Best fix: Update handlers/project.go to use "projectId" instead of "id".
+			// But for now in setup.go, we can just use one param name and rely on Gin or fix the handlers.
+			// Let's assume we fixed handlers to look for "projectId" if "id" is missing or just update handlers.
+			// Updating handlers is cleaner but out of scope for just fixing tests? No, I can update handlers.
+
+			// Let's use :projectId for everything here to satisfy Gin's constraints.
+			// And I will update project.go handlers to read "projectId" OR "id".
+			projects.GET("/:projectId", handlers.GetProject)
 			projects.PUT("/:projectId", handlers.UpdateProject)
 			projects.DELETE("/:projectId", handlers.DeleteProject)
 

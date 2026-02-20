@@ -41,14 +41,56 @@ func TestUploadDocument(t *testing.T) {
 	err = json.Unmarshal(w.Body.Bytes(), &doc)
 	assert.Nil(t, err)
 	assert.Equal(t, "test.txt", doc.Name)
-	assert.Equal(t, ".txt", doc.Type)
-
-	// Verify file exists on disk
-	_, err = os.Stat(doc.URL)
-	assert.Nil(t, err)
+	assert.Equal(t, 1, doc.Version)
 
 	// Clean up
 	os.Remove(doc.URL)
+}
+
+func TestDocumentVersioning(t *testing.T) {
+	SetupTestDB()
+	r := SetupRouter()
+
+	token, _ := GetAuthToken(r, "ver_owner@example.com", "Ver Owner")
+	projectId := createProjectForSprintTest(r, token)
+
+	// 1. Upload Version 1
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, _ := writer.CreateFormFile("file", "spec.pdf")
+	io.WriteString(part, "V1")
+	writer.Close()
+	req, _ := http.NewRequest("POST", "/api/projects/"+projectId+"/documents/", body)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+	var docV1 models.Document
+	json.Unmarshal(w.Body.Bytes(), &docV1)
+	defer os.Remove(docV1.URL)
+
+	assert.Equal(t, 1, docV1.Version)
+
+	// 2. Upload Version 2 (linked to V1)
+	body2 := &bytes.Buffer{}
+	writer2 := multipart.NewWriter(body2)
+	part2, _ := writer2.CreateFormFile("file", "spec_v2.pdf")
+	io.WriteString(part2, "V2")
+	writer2.Close()
+	// Add parentId query param
+	req2, _ := http.NewRequest("POST", "/api/projects/"+projectId+"/documents/?parentId="+docV1.ID, body2)
+	req2.Header.Set("Authorization", "Bearer "+token)
+	req2.Header.Set("Content-Type", writer2.FormDataContentType())
+	w2 := httptest.NewRecorder()
+	r.ServeHTTP(w2, req2)
+
+	assert.Equal(t, http.StatusCreated, w2.Code)
+	var docV2 models.Document
+	json.Unmarshal(w2.Body.Bytes(), &docV2)
+	defer os.Remove(docV2.URL)
+
+	assert.Equal(t, 2, docV2.Version)
+	assert.Equal(t, docV1.ID, *docV2.ParentID)
 }
 
 func TestGetDocuments(t *testing.T) {

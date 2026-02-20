@@ -56,6 +56,36 @@ func UploadDocument(c *gin.Context) {
 	// Get file info
 	sizeKB := int(file.Size / 1024)
 
+	// Versioning Logic
+	version := 1
+	var parentId *string
+	if pid := c.Query("parentId"); pid != "" {
+		var parentDoc models.Document
+		if err := database.DB.First(&parentDoc, "id = ? AND project_id = ?", pid, projectId).Error; err == nil {
+			// Found parent, increment version
+			// Ideally check if parent is latest or find max version in chain.
+			// Simplified: New upload becomes latest version of provided parent.
+			// Better: Find the latest version linked to this parent to get next number.
+
+			// If parent itself has a parent, use the root parent.
+			rootId := parentDoc.ID
+			if parentDoc.ParentID != nil {
+				rootId = *parentDoc.ParentID
+			}
+			parentId = &rootId
+
+			// Find max version
+			var maxVer int
+			database.DB.Model(&models.Document{}).
+				Where("id = ? OR parent_id = ?", rootId, rootId).
+				Select("MAX(version)").
+				Row().Scan(&maxVer)
+
+			if maxVer == 0 { maxVer = parentDoc.Version } // Fallback
+			version = maxVer + 1
+		}
+	}
+
 	// Create DB Record
 	doc := models.Document{
 		ID:        uuid.NewString(),
@@ -64,6 +94,8 @@ func UploadDocument(c *gin.Context) {
 		URL:       dst, // Relative path
 		Type:      ext,
 		Size:      &sizeKB,
+		Version:   version,
+		ParentID:  parentId,
 	}
 
 	if err := database.DB.Create(&doc).Error; err != nil {

@@ -113,6 +113,9 @@ func GetProject(c *gin.Context) {
 	userId := userIdStr.(string)
 
 	projectId := c.Param("id")
+	if projectId == "" {
+		projectId = c.Param("projectId")
+	}
 
 	var project models.Project
 	// Preload members to check access
@@ -156,6 +159,9 @@ func UpdateProject(c *gin.Context) {
 	userId := userIdStr.(string)
 
 	projectId := c.Param("id")
+	if projectId == "" {
+		projectId = c.Param("projectId")
+	}
 	var req UpdateProjectRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -209,6 +215,9 @@ func DeleteProject(c *gin.Context) {
 	userId := userIdStr.(string)
 
 	projectId := c.Param("id")
+	if projectId == "" {
+		projectId = c.Param("projectId")
+	}
 
 	var project models.Project
 	if err := database.DB.First(&project, "id = ?", projectId).Error; err != nil {
